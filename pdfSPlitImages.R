@@ -20,7 +20,13 @@ function(file, pdfBox.jar = "~/Downloads/pdfbox-app-2.0.2.jar")
 
 if(FALSE) {
   ff = list.files(pattern = ".*-.*-.*.pdf")
-  sapply(ff, function(f) { print(f); pdfToImage(f) })    
+  sapply(ff, function(f) { print(f); pdfToImage(f) })
+
+  a = list.files(pattern = "png$")
+  b = list.files(pattern = "pdf$")
+  setdiff(gsub("pdf$", "", b), gsub("png$", "", a))
+   # These are the primary files. They have no page suffix.
+   #  [1] "1981-118." "1982-128." "1983-144." "1984-155." "1985-168." "1986-180." "1987-201." "1988-209." "1989-217." "1990-223." "1991-229." "1992-233." "1993-236." "1994-244." "1995-249." "1996-254." "1997-259."
 }
 
 pdfToImage =
