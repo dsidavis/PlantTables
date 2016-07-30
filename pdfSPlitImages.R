@@ -30,6 +30,7 @@ pdfToImage =
     #    WARNING: No glyph for 111 (CID 006f) in font HiddenHorzOCR
     # These might be relevant for the OCR.
     # We may want this info when processing the resulting PNG.
+    # There are different numbers of warnings for these which may tell us about glyphs such as ligatures, etc.
     #
     #
 function(file, prefix = gsub("\\.pdf$", "", file), imageType = "png",
