@@ -1,0 +1,10 @@
+
+Merge bboxes that are very close horizontally and approximately the same height.
+e.g. "1981-118-12.png"    Yiel  and d in the 3rd column of the header are 2 separate boxes.
+     UC 566 but these are actually two separate wors.
+ 
+  Once we have the column lines, we can  merge the words together to make a column/cell phrase.
+
+
+Once we identify the locations of the summary statistics, we can zoom in on the sub-region 
+of the table data and redo the OCR.

@@ -1,0 +1,35 @@
+http://www.imagemagick.org/script/index.php
+
+
+convert file.pdf[pagenum]  foo.png
+
+
+
+
+Install ImageMagic
+  from source
+
+ghostscript wasn't finding /usr/local/lib/libTIFF.dylib
+  This was the problem with the ImageMagic binary so probably didn't need to install ImageMagic from souce
+Install gnu-ghostscript from  source
+  Didn't find jpeg
+     untar that  in the gnu-ghostscript directory and change name to jpeg.
+
+PDFBox
+https://pdfbox.apache.org/1.8/commandline.html
+
+java -jar ~/Downloads/pdfbox-app-2.0.2.jar PDFToImage -outputPrefix test -imageType png T13TulareRFBar04.pdf 
+
+Actually
+  we need to jar files, so set the class path and specify the fully qualified class name for PDFToImage
+  setenv CLASSPATH /Users/duncan/Downloads/levigo-jbig2-imageio-1.6.4.jar:/Users/duncan/Downloads/pdfbox-app-2.0.2.jar
+  java org.apache.pdfbox.tools.PDFToImage -outputPrefix test -imageType png 1982-128-10.pdf 
+
+java -jar ~/Downloads/pdfbox-app-2.0.2.jar PDFSplit -split 1 1981-118.pdf 
+  creates  1981-118-num.pdf for each page.
+  
+
+
+java -jar pdfbox-app-x.y.z.jar PDFToImage [OPTIONS] <PDF file>
+
+java -jar pdfbox-app-x.y.z.jar PDFSplit [OPTIONS] <PDF file>
