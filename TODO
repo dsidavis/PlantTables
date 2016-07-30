@@ -1,3 +1,32 @@
+T24..  Centered columns not getting detected correctly
+
+Once we identify the locations of the summary statistics, we can zoom in on the sub-region 
+of the table data and redo the OCR.
+  Doing that when we can identify the MEAN or GRAND .
+
+Find the horizontal lines marking the bottom of the header or the start of the footer
+and throw away the footer and deal with the header separately.
+  Have pdftohtml emit rectangles, lines, etc.
+  Is pdftohtml calling ghostscript?
+
+pdftohtml sometimes combines words, e.g. in T24...
+  1437 APB W01...
+ But not
+  20 ANZA
+ So these are separate. But we have contextual information that tells us if
+ an entry here doesn't start with a number, then take the entry before it.
+  The are ordered by vertical position.
+
+
+
+------------
+May be solved by pdftohtml....
+
+Avoid merging two sequences of characters that are too far apart  in pdfMinerDoc(). This 
+can lead to combining two cells in a row of a table that are close together because the columns
+are close.
+  See T44Durum  Central Valley RSI  with the RSI in a separate column from Centrall Valley.
+
 
 Merge bboxes that are very close horizontally and approximately the same height.
 e.g. "1981-118-12.png"    Yiel  and d in the 3rd column of the header are 2 separate boxes.
@@ -6,5 +35,14 @@ e.g. "1981-118-12.png"    Yiel  and d in the 3rd column of the header are 2 sepa
   Once we have the column lines, we can  merge the words together to make a column/cell phrase.
 
 
-Once we identify the locations of the summary statistics, we can zoom in on the sub-region 
-of the table data and redo the OCR.
+
+----------------------
+
+
+[done] order the values within a column by their height in the page.
+  T10..  In column 5, (in) from the header is last.
+
+[Done] In T10..  column o[[5]] has newlines and decimal places in the Plant Ht column when there are no decimal places in the text for that column.
+   Same with column 4 - 46.9.1.
+   They are not in the rownames(bb) when we compute these.
+   They are coming from the as.data.frame() and duplicate values causing R to add a .1, .2, etc.

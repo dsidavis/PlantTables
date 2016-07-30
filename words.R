@@ -40,6 +40,10 @@ abline(v = w, col = "orange")
     abline(v = as.integer(names(tmp))*mi, col = "darkgreen")
 
  D = as.matrix(dist(bb[, c(1, 3)]))
+
+ mid = (bb[,3] + bb[,1])/2
+ D.mid = as.matrix(dist(mid))
+
 # quantile
 # unique round values.
 # Take first few lines to get between distances and then use these on other lines

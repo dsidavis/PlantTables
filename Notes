@@ -1,0 +1,25 @@
+Problems/Issues
+T15 - problems.  o = getColumnData("T15")
+
+T01 - content is split across lines within a cell.
+      We do have horizontal lines separating the rows!
+      The column cutting points are wrong. Not getting column 2 by itself but mixing with col 3.
+      Same with col 4 & 5
+
+T02 - too few boxes on the page to exceed the threshold for findCols.
+T03 - similar to T02
+T04 - similar to T02
+T05 - similar to T02
+
+------------
+
+T06 - ok
+
+T24CommonWheat... ok
+   2 centered columns at the end.
+
+T10 -  okay
+T44 - okay
+T38 - okay
+T30 - okay
+
