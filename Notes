@@ -1,5 +1,17 @@
-Problems/Issues
+If there are - in the cells, then that column is centered for this 2004/ data.
+ tt = readLines("Notes"); tt = grep("^[0-9]|T", tt, value = TRUE); n =sapply(strsplit(tt, " "), `[`, 1); n = n[!is.na(n) & n != ""]; n = as.integer(gsub("^T", "", n))
+
+
+Problems/Issues - 17 at present
 T15 - problems.  o = getColumnData("T15")
+T19  presence of many -  make it look as if there are two columns within the  same area.  This is because we are not using the cols.mid for this
+T26  
+T56
+T55
+T39
+T36
+T34 - need to be using the cols.mid not just cols.left.
+T35 -  has some -
 
 T01 - content is split across lines within a cell.
       We do have horizontal lines separating the rows!
@@ -11,15 +23,60 @@ T03 - similar to T02
 T04 - similar to T02
 T05 - similar to T02
 
+T16 - some text mixed between adjacent columns Type and Parentage
+T20 - small columns mixing with adjacent.
+
+T40  - small column again #3
 ------------
 
 T06 - ok
+T07
+T08
+T09
+T10 -  okay
+T12
+T14
 
-T24CommonWheat... ok
+T21
+T23
+T24 CommonWheat... ok
    2 centered columns at the end.
 
-T10 -  okay
+
 T44 - okay
 T38 - okay
 T30 - okay
 
+T43
+T52
+T54
+
+-----
+
+Not run but viewed
+T11
+T13 - same as T12
+
+T17
+T18
+T22
+T25
+T26
+
+27
+28
+29
+31
+32
+33
+37
+41
+42
+45
+46
+47
+48
+49
+T50
+T51
+T53 - like 54
