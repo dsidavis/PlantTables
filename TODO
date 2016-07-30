@@ -7,7 +7,7 @@ of the table data and redo the OCR.
 Find the horizontal lines marking the bottom of the header or the start of the footer
 and throw away the footer and deal with the header separately.
   Have pdftohtml emit rectangles, lines, etc.
-  Is pdftohtml calling ghostscript?
+  Is pdftohtml calling ghostscript? No - use dtruss to verify this.
 
 pdftohtml sometimes combines words, e.g. in T24...
   1437 APB W01...

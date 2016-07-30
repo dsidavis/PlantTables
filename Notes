@@ -27,9 +27,9 @@ T16 - some text mixed between adjacent columns Type and Parentage
 T20 - small columns mixing with adjacent.
 
 T40  - small column again #3
+T06 - small columns bleeding into others/vice-versa.
 ------------
 
-T06 - ok
 T07
 T08
 T09

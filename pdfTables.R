@@ -10,7 +10,8 @@ file = "2004/T28SacDeltaWheat04.pdf"
 getColumnData =  
 function(file, doc = convertPDF2XML(file),
            #doc = pdfMinerDoc(file, removeHeader = FALSE, removeZeroWidthLines = FALSE),
-          show = TRUE)
+          show = TRUE,
+          footerRX = "^(MEAN|Rating scale|Analysis provided by|Numbers? in parentheses|SOURCE:)")
 {
      # Just for my convience so I can call this with getColumnData("T22")
     if(!file.exists(file))
@@ -23,12 +24,39 @@ function(file, doc = convertPDF2XML(file),
        bb = readPDF2XML(doc = doc)
     }
 
+    if(show)
+       showBoxes(, bb, str.cex = .8)
+
+    invisible(getColsFromBBox(bb, footerRX, show))
+}
+
+library(Rtesseract)
+getScannedCols =
+function(file, show = TRUE)
+{
+    ts = tesseract(file)
+    Recognize(ts)
+    bbox = BoundingBoxes(ts)
+
+    if(show) 
+       plot(ts, bbox = bbox, cropToBoxes = TRUE, margin = .005)
     
+    colnames(bbox) = c("left", "bottom", "right", "top")
+    m = max(bbox[, c(2,4)])
+    bbox[,c(2, 4)] = m - bbox[, c(2,4)]
+
+    
+    getColsFromBBox(bbox, "GRAND|MEAN", show)
+}
+
+getColsFromBBox =
+function(bb, footerRX, show = TRUE)
+{    
     pageWidth = diff(range(bb))
 
 
         # Remove everything from the summary statistics and below.
-    i = grep("^(MEAN|Rating scale|Analysis provided by|Numbers? in parentheses|SOURCE:)", rownames(bb))
+    i = grep(footerRX, rownames(bb))
     if(length(i))
         bb = bb[ bb[,2] > bb[i[1], 2] + 2, ]
 
@@ -57,7 +85,6 @@ function(file, doc = convertPDF2XML(file),
     splits = c(0, cols.left[-length(cols.left)]) + diff(c(0, cols.left))/2
     
     if(show){
-        showBoxes(, bb, str.cex = .8)
         abline(v = cols, col = "red")        
         abline(v = cols.left, col = "blue")
         abline(v = cols.mid, col = "green")
