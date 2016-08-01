@@ -42,6 +42,5 @@ function(file)
     cmd = sprintf("pdftohtml -q -s -nomerge -fontfullname -c -xml %s %s", file, tmp)
     status = system(cmd)
     xmlParse(tmp)
-#    ~/DSIProjects/MarkLundy/2004/T24CommonWheatList04.pdf  /tmp/foo.xml    
 }
 

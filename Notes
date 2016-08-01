@@ -2,7 +2,7 @@ If there are - in the cells, then that column is centered for this 2004/ data.
  tt = readLines("Notes"); tt = grep("^[0-9]|T", tt, value = TRUE); n =sapply(strsplit(tt, " "), `[`, 1); n = n[!is.na(n) & n != ""]; n = as.integer(gsub("^T", "", n))
 
 
-Problems/Issues - 17 at present
+Problems/Issues - 18 at present
 T15 - problems.  o = getColumnData("T15")
 T19  presence of many -  make it look as if there are two columns within the  same area.  This is because we are not using the cols.mid for this
 T26  

@@ -11,12 +11,14 @@ getColumnData =
 function(file, doc = convertPDF2XML(file),
            #doc = pdfMinerDoc(file, removeHeader = FALSE, removeZeroWidthLines = FALSE),
           show = TRUE,
-          footerRX = "^(MEAN|Rating scale|Analysis provided by|Numbers? in parentheses|SOURCE:)")
+          footerRX = "^(MEAN|Rating scale|Analysis provided by|Numbers? in parentheses|SOURCE:)", ...)
 {
      # Just for my convience so I can call this with getColumnData("T22")
     if(!file.exists(file))
       file = grep(paste0("^2004/", file), list.files("2004", pattern = "pdf$", full = TRUE), value = TRUE)
 
+#Open(file)
+    
     if(is(doc, "PDFMinerDoc")) {
       p = doc[[1]]
       bb = getBBox(p, addNames = TRUE)
@@ -24,6 +26,8 @@ function(file, doc = convertPDF2XML(file),
        bb = readPDF2XML(doc = doc)
     }
 
+#    lines = getLines(file)
+    
     if(show)
        showBoxes(, bb, str.cex = .8)
 
@@ -50,7 +54,7 @@ function(file, show = TRUE)
 }
 
 getColsFromBBox =
-function(bb, footerRX, show = TRUE)
+function(bb, footerRX, show = TRUE, ...)
 {    
     pageWidth = diff(range(bb))
 
@@ -75,19 +79,25 @@ function(bb, footerRX, show = TRUE)
 # Same also with the sub headers that separate parts of the table
 # e.g., under CULTIVARS, ADVANCED LIES, TRITICALE
 
-    bb = cbind(bb, center = (bb[, 1]  + bb[, 3])/2)
+#    bb = cbind(bb, center = (bb[, 1]  + bb[, 3])/2)
+
+
+if(TRUE)
+    cols.left = locateColumns(bb, ...)
+else {    
     cols = findCols(bb[, 3])
     cols.left = findCols(bb[,1])
     cols.mid = findCols(bb[, "center"])
+} 
 
      # get the mid points between each of the cols.left.
      # Probably need to make this more complex to handle the centered columns, etc.
     splits = c(0, cols.left[-length(cols.left)]) + diff(c(0, cols.left))/2
     
     if(show){
-        abline(v = cols, col = "red")        
-        abline(v = cols.left, col = "blue")
-        abline(v = cols.mid, col = "green")
+#       abline(v = cols, col = "red")        
+#       abline(v = cols.left, col = "blue")
+#       abline(v = cols.mid, col = "green")
         abline(v = splits, col = "lightgrey", lty = 2, lwd = 2)
     }
 
@@ -106,10 +116,20 @@ function(bb, footerRX, show = TRUE)
     cols = lapply(cols, function(x) gsub("\\n", "", x)) #  XML:::trim)
 
     tbl = toTable(cols)
-    
+cat("# columns =", length(cols), "\n")    
     invisible( cols )
 }
 
+locateColumns =
+function(bbox, threshold = 10, scale = 10)
+{
+   align = rep(c("right", "left", "center"), each = nrow(bbox))
+   x = c(bbox[, 3], bbox[, 1], (bbox[, 1]  + bbox[, 3])/2)
+#   d = data.frame(type = align, pos = x)
+#   by(d, d$pos/scale, function(v) )
+browser()    
+   findCols(x, threshold, scale)
+}
 
 findCols =
 function(pos, threshold = 10, scale = 10)  # length(pos)*.85
