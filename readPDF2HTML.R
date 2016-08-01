@@ -1,6 +1,9 @@
 library(XML)
 
 readPDF2XML =
+    #
+    #  Computes the BBox
+    #
 function(file, doc = xmlParse(file), asMatrix = TRUE)
 {
     if(missing(doc)) {
@@ -33,14 +36,24 @@ function(file, doc = xmlParse(file), asMatrix = TRUE)
       d
 }
 
+setOldClass(c("PDFToHTMLDoc", "ConvertedPDFDoc", "XMLInternalDocument", "XMLAbstractDocument"))
+
 convertPDF2XML =
-function(file)
+function(file, pdftohtml = getOption("PDFTOHTML", Sys.getenv("PDFTOHTML", 'pdftohtml')))
 {
     #XXX why can't we use R's tempfile().  pdftohtml and the shell doesn't think it exists!
-    tmp = gsub("//", "/", tempfile())
-    tmp = sprintf("/tmp/%s.xml", gsub("pdf$", "xml", basename(file)))
-    cmd = sprintf("pdftohtml -q -s -nomerge -fontfullname -c -xml %s %s", file, tmp)
-    status = system(cmd)
-    xmlParse(tmp)
+#    tmp = gsub("//", "/", tempfile())
+#    tmp = sprintf("/tmp/%s", gsub("\\.pdf$", "", basename(file)))
+      # -q - quiet
+      # -xml - convert to xml
+      # No -c with -stdout!!!
+    cmd = sprintf("%s -q -xml -stdout %s", pdftohtml, file)
+print(cmd)
+    out = system(cmd, intern = TRUE)
+    
+#    out = paste0(tmp, ".xml")    
+    doc = xmlParse(out, asText = TRUE)
+    class(doc) = c("PDFToHTMLDoc", "ConvertedPDFDoc", class(doc))
+    doc
 }
 
