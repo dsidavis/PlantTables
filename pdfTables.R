@@ -3,8 +3,8 @@
 
 library(CVRead)
 
-file = "2004/T20WinWheatList04.pdf"
-file = "2004/T28SacDeltaWheat04.pdf"
+#file = "2004/T20WinWheatList04.pdf"
+#file = "2004/T28SacDeltaWheat04.pdf"
 
 # not ready to call it getTable() !
 getColumnData =  
@@ -26,7 +26,7 @@ function(file, doc = convertPDF2XML(file),
        bb = readPDF2XML(doc = doc)
     }
 
-#    lines = getLines(file)
+#    lines = getLines(p)
     
     if(show)
        showBoxes(, bb, str.cex = .8)
