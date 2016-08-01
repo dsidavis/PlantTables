@@ -41,17 +41,13 @@ setOldClass(c("PDFToHTMLDoc", "ConvertedPDFDoc", "XMLInternalDocument", "XMLAbst
 convertPDF2XML =
 function(file, pdftohtml = getOption("PDFTOHTML", Sys.getenv("PDFTOHTML", 'pdftohtml')))
 {
-    #XXX why can't we use R's tempfile().  pdftohtml and the shell doesn't think it exists!
-#    tmp = gsub("//", "/", tempfile())
-#    tmp = sprintf("/tmp/%s", gsub("\\.pdf$", "", basename(file)))
       # -q - quiet
       # -xml - convert to xml
       # No -c with -stdout!!!
     cmd = sprintf("%s -q -xml -stdout %s", pdftohtml, file)
-print(cmd)
+
     out = system(cmd, intern = TRUE)
     
-#    out = paste0(tmp, ".xml")    
     doc = xmlParse(out, asText = TRUE)
     class(doc) = c("PDFToHTMLDoc", "ConvertedPDFDoc", class(doc))
     doc
