@@ -191,8 +191,16 @@ else {
     bb = as.data.frame(bb)
     bb$text = vals
 
+    
+     # compute the locations of the lines across the page. Use bottom of the text for now.
+    ncols = length(levels(g))
+    tt = table(bb[, "bottom"])
+    pageLines =  as.numeric( names(tt)[ tt > ncols*.5 ])
+
+    
     cols = by(bb, g, function(x) {
                         x = mergeHorizontalBoxes(x)
+                        x = fillMissingCells(x, pageLines)                                                
                         x$text[ order(x[, "bottom"], decreasing = TRUE) ]
                       })
 
@@ -256,18 +264,16 @@ function(d, dropRanks = TRUE)
 mergeHorizontalBoxes =
 function(bbox)
 {
-if(nrow(bbox) == 44) browser()
-
-   o = order(bbox[, "bottom"], decreasing = TRUE)
-   bbox = bbox[o, ]
+   bbox = orderBBox(bbox)    
    tmp = cut(bbox[, "bottom"], unique(c(0,  bbox[, "bottom"] - median(-diff(bbox[, "bottom"]))*.5, Inf)))
    tt = table(tmp)
-#   tt = table(bbox[, "bottom"])
+
    if(any(tt > 1)) {
       bbox =  by(bbox, tmp, combineHBoxes)
       bbox = do.call(rbind, bbox)
    }
-  
+
+
    bbox
 }
 
@@ -279,6 +285,47 @@ function(els)
     m = data.frame(left = min(els[,1]), bottom = els[1, 2], right = max(els[,3]), top = max(els[,4]), center = NA, text = txt)
     rownames(m) = txt
     m
+}
+
+
+fillMissingCells =
+    #
+    # rather than filling them in afterwards and having to move the values, we'll
+    # add a cell/box where we think there should be one.
+    #
+    #  Compute the line height  top-bottom
+    #  Then the gap between
+    #
+    #KISS  get the bottoms and find where the difference between successive 
+    #
+function(bbox, pageLines = numeric())
+{
+   bbox = orderBBox(bbox)
+#if(nrow(bbox) == 28) browser()
+    k = cut(bbox[, "bottom"], pageLines - 1)
+    tt = table(k)
+    if(any(tt == 0)) {
+        ids = names(tt)[ tt == 0]
+        b = as.numeric(gsub("\\(([0-9]+(\\.[0-9])?),.*", "\\1", ids))
+        n = length(b)
+        tmp = data.frame(left = rep(min(bbox[, "left"]), n), bottom = b, right = rep(min(bbox[, "left"]) + 5, n), top = b + 5, center = NA, text = NA)
+        bbox = orderBBox( rbind(bbox, tmp))
+    }
+
+#   lineHeight = bbox[, "top"] - bbox[, "bottom"]
+#   typicalLineDiff = median(-diff(bbox[, "bottom"]))*.5
+#   tmp = cut(bbox[, "bottom"], unique(c(0,  bbox[, "bottom"] - , Inf)))
+
+
+
+   bbox
+}
+
+orderBBox =
+function(bbox)
+{
+   o = order(bbox[, "bottom"], decreasing = TRUE)
+   bbox[o, ]
 }
 
 # This is just for helping to verify the results quickly
