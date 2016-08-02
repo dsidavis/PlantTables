@@ -5,7 +5,10 @@ If there are - in the cells, then that column is centered for this 2004/ data.
 [done] recombine cells within a column that are on the same line.
 This means group by bottom + 5. (Deal with the subscripts).
 
-Find lines and then identify missing cells.
+[done] Find lines and then identify missing cells.
+
+
+Get the column headers!
 
 
 allFiles = c(sprintf("T0%d", 1:9), sprintf("T%d", 11:56))
@@ -17,11 +20,10 @@ names(w)[!w]
 df/list
 38/17
 
-list  [1] "T01" "T02" "T03" "T04" "T05" "T06" "T13" "T14" "T15" "T16" "T19" "T20" "T23" "T34" "T38" "T39" "T40" "T43" "T53" "T54" "T55" "T56"
+list   [1] "T01" "T02" "T03" "T04" "T05" "T13" "T14" "T15" "T16" "T19" "T34" "T38" "T39" "T53" "T54" "T55" "T56"
 
 
 
-Get the column headers!
 
 T14 - footer line is broken into 2. Slight gap after Madera column.
   Doesn't discard the header.  But this is because of the weird line in the footer.
@@ -31,7 +33,7 @@ T15 - lots of - in the table.
 
 
 Problems/Issues - 18 at present
-T15 - problems.  o = getColumnData("T15")
+T15 - problems. 
 T19  presence of many -  make it look as if there are two columns within the  same area.  This is because we are not using the cols.mid for this
 T39
 T36
@@ -55,10 +57,6 @@ T16 - some text mixed between adjacent columns Type and Parentage
   Subscripts as in T06
    So the column with 45 would come to 43. There are 3 columns with 43, and 2 with 16 & 27 to make up the 43.
 
-
-T06 -  Missing value in the 4th column.
-   [Fixed] In column 4, we have odd boxes.  F_6, i.e. F subscript 6 or 7.  This makes multiple boxes.
-     We need to recombine these.  e.g. F7 CMB85A
 
 T13 - one column  split into two.
 
@@ -131,6 +129,12 @@ T24 - works with simple mergeHorizontalBoxes, i.e. when we only check bottoms ar
 
 
 T54 -  one column broken into 2. -midpoint issue versus right of the last group should do this.
+
+
+T06 -  Missing value in the 4th column.
+   [Fixed] In column 4, we have odd boxes.  F_6, i.e. F subscript 6 or 7.  This makes multiple boxes.
+     We need to recombine these.  e.g. F7 CMB85A
+
 
 
 T26  
