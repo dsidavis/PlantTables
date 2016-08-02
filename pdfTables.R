@@ -16,8 +16,9 @@ function(file, doc = convertPDF2XML(file),
      # Just for my convience so I can call this with getColumnData("T22")
     if(missing(doc) && !file.exists(file))
       file = grep(paste0("^2004/", file), list.files("2004", pattern = "pdf$", full = TRUE), value = TRUE)
-if(showPDF)
-Open(file)
+
+    if(showPDF)
+       Open(file)
     
     if(is(doc, "PDFMinerDoc")) 
       bb = getBBox(p, addNames = TRUE)
@@ -29,7 +30,7 @@ Open(file)
       # We may actually just know these as CULTIVARS and ADVANCED LINES
     bb = bb[!grepl("^CULTIVARS|ADVANCED LINES|TRITICALE$", rownames(bb)), ]    
     
-#browser()
+
     i = grep(footerRX, rownames(bb))
     if(length(i))
         bb = bb[ bb[,2] > bb[i[1], 2] + 2, ]
@@ -59,7 +60,9 @@ Open(file)
         if(min(bb[!i, "bottom"]) > pos[2])
           bb = bb[!i,]
     }
-    
+#browser()
+    i = rownames(bb) == " -"
+    bb[i, "right"] = bb[i, "right"] - 10 
     
     if(show)
        showBoxes(p, bb, str.cex = .8)
@@ -106,7 +109,7 @@ function(bbox, page, threshold = .75, linesBB = getLines(page))
   if(nrow(ll) == 3)
     ll[2:3, "bottom"]
   else {
-     warning("take a look")
+     warning("take a look in", docName(page))
      return(numeric())
   }
 }
@@ -144,6 +147,7 @@ function(bb, footerRX, show = TRUE, ...)
         bb = bb[ bb[,2] > bb[i[1], 2] + 2, ]
 
     bb = bb[ ! grepl("^TABLE", rownames(bb)), ]
+
 
 
 #if(any( i <- ((bb[,3] - bb[,1]) > .25*pageWidth)))
@@ -187,7 +191,10 @@ else {
     bb = as.data.frame(bb)
     bb$text = vals
 
-    cols = by(bb, g, function(x) x$text[ order(x[,2], decreasing = TRUE) ])
+    cols = by(bb, g, function(x) {
+                        x = mergeHorizontalBoxes(x)
+                        x$text[ order(x[, "bottom"], decreasing = TRUE) ]
+                      })
 
     cols = cols[ sapply(cols, length) > 0 ]
     names(cols) = sapply(cols, `[`, 1)
@@ -208,7 +215,7 @@ function(bbox, threshold = 10, scale = 10)
    x = c(bbox[, 3], bbox[, 1], (bbox[, 1]  + bbox[, 3])/2)
 #   d = data.frame(type = align, pos = x)
 #   by(d, d$pos/scale, function(v) )
-browser()    
+
    findCols(x, threshold, scale)
 }
 
@@ -223,8 +230,14 @@ function(pos, threshold = 10, scale = 10)  # length(pos)*.85
 toTable =
     # This attempts to organize the columns with the header, etc into a data frame.
     # It may fail and just return the columns with different lengths.
-function(d)
+function(d, dropRanks = TRUE)
 {
+
+    if(dropRanks) {
+        isRank = sapply(d, function(x) all(grepl("^[[:space:]]*\\([[:space:]]*[0-9]+\\)$", x)))
+        d = d[!isRank]
+    }
+    
     d = lapply(d, function(x) {
                     x[ XML:::trim(x) == "-" ] = NA
                     type.convert(x, as.is = TRUE)
@@ -237,6 +250,41 @@ function(d)
     d
 }
 
+
+#############################################
+
+mergeHorizontalBoxes =
+function(bbox)
+{
+if(nrow(bbox) == 44) browser()
+
+   o = order(bbox[, "bottom"], decreasing = TRUE)
+   bbox = bbox[o, ]
+#   tmp = cut(bbox[, "bottom"], unique(c(0,  bbox[, "bottom"] - median(-diff(bbox[, "bottom"]))*.5, Inf)))
+#   tt = table(tmp)
+   tt = table(bbox[, "bottom"])
+   if(any(tt > 1)) {
+       for(i in as.integer(names(tt[tt > 1]))) {
+           i = bbox[, "bottom"] == i
+           tmp = bbox[i,]
+           bbox = bbox[!i,]
+           txt = paste(rownames(tmp), collapse = "")
+           m = data.frame(left = min(tmp[,1]), bottom = tmp[1, 2], right = max(tmp[,3]), top = max(tmp[,4]), center = NA, text = txt)
+           rownames(m) = txt
+           bbox = rbind(bbox, m)    
+       }
+   }
+  
+   bbox
+}
+
+combineHBoxes =
+function(els)
+{
+    
+
+
+}
 
 # This is just for helping to verify the results quickly
 

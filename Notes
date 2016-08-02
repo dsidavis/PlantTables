@@ -2,23 +2,46 @@ If there are - in the cells, then that column is centered for this 2004/ data.
  tt = readLines("Notes"); tt = grep("^[0-9]|T", tt, value = TRUE); n =sapply(strsplit(tt, " "), `[`, 1); n = n[!is.na(n) & n != ""]; n = as.integer(gsub("^T", "", n))
 
 
+recombine cells within a column that are on the same line.
+This means group by bottom + 5. (Deal with the subscripts).
+
+Find lines and then identify missing cells.
+
+
+allFiles = c(sprintf("T0%d", 1:9), sprintf("T%d", 11:56))
+z = sapply(allFiles, function(x) { print(x); getColumnData(x) })
+table(sapply(z, class))
+w = (sapply(z, class) == "data.frame")
+
+df/list
+33/22
+
+list - "T01" "T02" "T03" "T04" "T05" "T06" "T13" "T14" "T15" "T16" "T19" "T20" "T23" "T34" "T38" "T39" "T40" "T43" "T53" "T54" "T55" "T56"
+
+
+28 df/27 list.
+df  "T07" "T08" "T09" "T11" "T12" "T17" "T18" "T21" "T22" "T25" "T26" "T27" "T28" "T29" "T30" "T31" "T32" "T33" "T37" "T41" "T42" "T45" "T46" "T47" "T48" "T49" "T50" "T52"
+
+list "T01" "T02" "T03" "T04" "T05" "T06" "T13" "T14" "T15" "T16" "T19" "T20" "T23" "T24" "T34" "T35" "T36" "T38" "T39" "T40" "T43" "T44" "T51" "T53" "T54" "T55" "T56"
+
 Get the column headers!
 
 T14 - footer line is broken into 2. Slight gap after Madera column.
   Doesn't discard the header.  But this is because of the weird line in the footer.
-   
+
+T15 - lots of - in the table.
 ------
 
 
 Problems/Issues - 18 at present
 T15 - problems.  o = getColumnData("T15")
 T19  presence of many -  make it look as if there are two columns within the  same area.  This is because we are not using the cols.mid for this
-T26  
 T56
 T55
 T39
 T36
 T34 - need to be using the cols.mid not just cols.left.
+  1 column split into 2.
 T35 -  has some -
 
 T01 - content is split across lines within a cell.
@@ -34,11 +57,14 @@ T05 - similar to T02
 
 T16 - some text mixed between adjacent columns Type and Parentage
   The column split is putting two for the shor column.
+  Subscripts as in T06
+   So the column with 45 would come to 43. There are 3 columns with 43, and 2 with 16 & 27 to make up the 43.
 
 
-T06 - small columns bleeding into others/vice-versa.
+T06 - In column 4, we have odd boxes.  F_6, i.e. F subscript 6 or 7.  This makes multiple boxes.
+     We need to recombine these.  e.g. F7 CMB85A
 
-T13 - NO - not same as T12 anymore
+T13 - one column  split into two.
 
 ---------------
 Problems we are beginning to know about
@@ -46,7 +72,7 @@ Problems we are beginning to know about
 T40  -                               previous: small column again #3
    Okay now, but there is a missing value in the 4th column, in the middle.
 
-T20 - small columns mixing with adjacent.
+T20 - Missing values small columns mixing with adjacent.
     Everything is fine except the fourth column has a lot of missing values.
     If we know we have the columns correct, we could just fill these in.
     Alternatively, look at each row and figure out the number of cells and fill in accordingly (easier said than done).
@@ -58,39 +84,60 @@ T20 - small columns mixing with adjacent.
 ---------
 Returns as List
 
-T23 - getting confused with the  number (rank) and the - as one or two columns and missing values induced 
+T23 -  Too few cells in the columns with missing ranks so that the threshold doesn't add another column split.
+     French accent in Decor that is not coming out from pdftohtml properly.
+ 
+    getting confused with the  number (rank) and the - as one or two columns and missing values induced 
         The - is being intrepreted in the adjaced column and so no values in the cells of the number/value column.
         In the last "column" - number and rank, the terms are being mixed so much longer.
    Need to handle the - character specially.
 
-T24 - list CommonWheat... ok
-   2 centered columns at the end.
+
 
 T38 - 
    Seems like we might make this work if the split between columns isn't just the  mid point between the two columns
    but the right value + 1  of all the cells in the previous columns.
+ 38  two columns in the result are split which would make one column.
 
-38  two columns in the result are split which would make one column.
-
-T44 - list 
 T43 - list
 T54 -  one column broken into 2. -midpoint issue versus right of the last group should do this.
 20
 23
-24
 T34
 35
 36
-38
-39
+38 - 19 columns with same length, 2 that are split to make up the other column.
+    o[sapply(o, length) < 34]
+     right aligned.
+39 - missing values (-)	
 
-40
-43
-44
-51
+40 - one column has one less value.  There is a missing value in this column.
+43 - - and values are split.
+
 53, 54, 55, 56
+
+
 ------------
 Data frames (for now!)
+
+"T07" "T08" "T09" "T11" "T12" "T17" "T18" "T21" "T22" "T24" "T25" "T26" "T27" "T28" "T29" "T30" "T31" "T32" "T33" "T35" "T36" "T37" "T41" "T42" "T44" "T45" "T46" "T47"
+"T48" "T49" "T50" "T51" "T52"
+
+
+Check T24 & 44 when we fix mergeHorizontalBoxes to handle the subscripts.
+T24 - works with simple mergeHorizontalBoxes, i.e. when we only check bottoms are the same.  
+     one column has two cells each with 2 boxes that have no space between them.  "a male"
+ ***  Merge  these boxes together.
+   2 centered columns at the end.
+   4 cells need to be merged into 2 cells as they are exactly adjacent  (right of one has same value as left of the next one)
+
+44 - same as 24 - adjacent cells need to be merged. But they are not exactly adjacent. 
+      Need to merge these afterwards given that they have the same bottom/top and are in the same column.
+
+
+
+
+T26  
 
 T21 - df now.   TABLE 21 had a space before it.
 T22 - df
@@ -104,7 +151,12 @@ T17 - df
 T18 - df
 T30 - okay
 T37 - after accounting for mean.
-41,42,45-49
+41,42,
+45
+46
+47
+48
+49
 50
 52
 -----
