@@ -24,7 +24,7 @@ Open(file)
     else 
       bb = readPDF2XML(doc = doc)
 
-    bb = bb[!grepl("^TABLE [0-9]{1,}", rownames(bb)), ]
+    bb = bb[!grepl("^[[:space:]]*TABLE [0-9]{1,}", rownames(bb)), ]
       # Now see if we can throw out boxes that have lines under them
       # We may actually just know these as CULTIVARS and ADVANCED LINES
     bb = bb[!grepl("^CULTIVARS|ADVANCED LINES|TRITICALE$", rownames(bb)), ]    
@@ -62,7 +62,7 @@ Open(file)
     
     
     if(show)
-       showBoxes(, bb, str.cex = .8)
+       showBoxes(p, bb, str.cex = .8)
 
     invisible(getColsFromBBox(bb, footerRX, show))
 }
@@ -132,6 +132,7 @@ function(file, show = TRUE)
     getColsFromBBox(bbox, "GRAND|MEAN", show)
 }
 
+
 getColsFromBBox =
 function(bb, footerRX, show = TRUE, ...)
 {    
@@ -196,7 +197,7 @@ else {
     tbl = toTable(cols)
 cat("# columns =", length(cols), class(tbl), "\n")
 if(is.list(tbl))
-  print(sapply(tbl, length))   
+  print(table(sapply(tbl, length)))
     invisible( tbl )
 }
 

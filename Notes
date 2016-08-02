@@ -2,10 +2,11 @@ If there are - in the cells, then that column is centered for this 2004/ data.
  tt = readLines("Notes"); tt = grep("^[0-9]|T", tt, value = TRUE); n =sapply(strsplit(tt, " "), `[`, 1); n = n[!is.na(n) & n != ""]; n = as.integer(gsub("^T", "", n))
 
 
-T22 - ERROR
+Get the column headers!
 
 T14 - footer line is broken into 2. Slight gap after Madera column.
-
+  Doesn't discard the header.  But this is because of the weird line in the footer.
+   
 ------
 
 
@@ -34,46 +35,65 @@ T05 - similar to T02
 T16 - some text mixed between adjacent columns Type and Parentage
   The column split is putting two for the shor column.
 
-T20 - small columns mixing with adjacent.
-   It is now the "20 Entries" at the bottom by itself.
-   Here we can see it is just a summary. But we could just add an NA to each of the other columns.
-   The fourth column has a lot of missing values.
-   If we know we have the columns correct, we could just fill these in.
-    Alternatively, look at each row and figure out the number of cells and fill in accordingly (easier said than done).
 
-T40  - small column again #3
 T06 - small columns bleeding into others/vice-versa.
 
 T13 - NO - not same as T12 anymore
 
+---------------
+Problems we are beginning to know about
+
+T40  -                               previous: small column again #3
+   Okay now, but there is a missing value in the 4th column, in the middle.
+
+T20 - small columns mixing with adjacent.
+    Everything is fine except the fourth column has a lot of missing values.
+    If we know we have the columns correct, we could just fill these in.
+    Alternatively, look at each row and figure out the number of cells and fill in accordingly (easier said than done).
+   [Done] It is now the "20 Entries" at the bottom by itself.
+        Here we can see it is just a summary. But we could just add an NA to each of the other columns.
+
+
 
 ---------
 Returns as List
-T20
-T21 - list
-T23 - list
+
+T23 - getting confused with the  number (rank) and the - as one or two columns and missing values induced 
+        The - is being intrepreted in the adjaced column and so no values in the cells of the number/value column.
+        In the last "column" - number and rank, the terms are being mixed so much longer.
+   Need to handle the - character specially.
 
 T24 - list CommonWheat... ok
    2 centered columns at the end.
-T30 - okay
-T38 - okay
-T44 - list okay
+
+T38 - 
+   Seems like we might make this work if the split between columns isn't just the  mid point between the two columns
+   but the right value + 1  of all the cells in the previous columns.
+
+38  two columns in the result are split which would make one column.
+
+T44 - list 
 T43 - list
-T52
-T54
-T21-T29 - list
-T31-36 
-38,
+T54 -  one column broken into 2. -midpoint issue versus right of the last group should do this.
+20
+23
+24
+T34
+35
+36
+38
 39
+
 40
 43
 44
 51
-53-56
+53, 54, 55, 56
 ------------
 Data frames (for now!)
 
-
+T21 - df now.   TABLE 21 had a space before it.
+T22 - df
 T07 - df
 T08 - df
 T09 - df
@@ -82,7 +102,7 @@ T11 - df
 T12 - df
 T17 - df
 T18 - df
-T30
+T30 - okay
 T37 - after accounting for mean.
 41,42,45-49
 50
