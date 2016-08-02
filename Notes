@@ -2,6 +2,13 @@ If there are - in the cells, then that column is centered for this 2004/ data.
  tt = readLines("Notes"); tt = grep("^[0-9]|T", tt, value = TRUE); n =sapply(strsplit(tt, " "), `[`, 1); n = n[!is.na(n) & n != ""]; n = as.integer(gsub("^T", "", n))
 
 
+T22 - ERROR
+
+T14 - footer line is broken into 2. Slight gap after Madera column.
+
+------
+
+
 Problems/Issues - 18 at present
 T15 - problems.  o = getColumnData("T15")
 T19  presence of many -  make it look as if there are two columns within the  same area.  This is because we are not using the cols.mid for this
@@ -18,65 +25,69 @@ T01 - content is split across lines within a cell.
       The column cutting points are wrong. Not getting column 2 by itself but mixing with col 3.
       Same with col 4 & 5
 
-T02 - too few boxes on the page to exceed the threshold for findCols.
+T02 - too few boxes on the page to exceed the threshold for findCols.  So findCols() has to adapt dynamically to the number of boxes.
+       Also missing values of the form - and so the rankings for those rows are entirely absent (i.e. the number within the ( ) in the next "column")
 T03 - similar to T02
 T04 - similar to T02
 T05 - similar to T02
 
 T16 - some text mixed between adjacent columns Type and Parentage
+  The column split is putting two for the shor column.
+
 T20 - small columns mixing with adjacent.
+   It is now the "20 Entries" at the bottom by itself.
+   Here we can see it is just a summary. But we could just add an NA to each of the other columns.
+   The fourth column has a lot of missing values.
+   If we know we have the columns correct, we could just fill these in.
+    Alternatively, look at each row and figure out the number of cells and fill in accordingly (easier said than done).
 
 T40  - small column again #3
 T06 - small columns bleeding into others/vice-versa.
-------------
 
-T07
-T08
-T09
-T10 -  okay
-T12
-T14
+T13 - NO - not same as T12 anymore
 
-T21
-T23
-T24 CommonWheat... ok
+
+---------
+Returns as List
+T20
+T21 - list
+T23 - list
+
+T24 - list CommonWheat... ok
    2 centered columns at the end.
-
-
-T44 - okay
-T38 - okay
 T30 - okay
-
-T43
+T38 - okay
+T44 - list okay
+T43 - list
 T52
 T54
+T21-T29 - list
+T31-36 
+38,
+39
+40
+43
+44
+51
+53-56
+------------
+Data frames (for now!)
 
+
+T07 - df
+T08 - df
+T09 - df
+T10 - df
+T11 - df
+T12 - df
+T17 - df
+T18 - df
+T30
+T37 - after accounting for mean.
+41,42,45-49
+50
+52
 -----
 
-Not run but viewed
-T11
-T13 - same as T12
 
-T17
-T18
-T22
-T25
-T26
 
-27
-28
-29
-31
-32
-33
-37
-41
-42
-45
-46
-47
-48
-49
-T50
-T51
-T53 - like 54

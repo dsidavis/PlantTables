@@ -48,8 +48,9 @@ function(file, prefix = gsub("\\.pdf$", "", file), imageType = "png",
        return(to)
     
 #    f = list.files(dirname(file))
-    cmd = sprintf("java -cp %s org.apache.pdfbox.tools.PDFToImage -outputPrefix %s -imageType %s %s",
+    cmd = sprintf("java -cp %s org.apache.pdfbox.tools.PDFToImage -outputPrefix '%s' -imageType '%s' '%s'",
                     paste(path.expand(pdfBox.jar), collapse = ":"), prefix, imageType, file)
+    print(cmd)
     system(cmd, intern = TRUE)
 #    id = setdiff(list.files(dirname(file)), f)
     id = sprintf("%s1.%s", prefix, imageType)

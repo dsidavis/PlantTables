@@ -1,21 +1,19 @@
+When we can determine that a cell has a missing box, add an NA there.
+  e.g. T37 and the last row for the first column.  We deal with this by recognizing the Mean and discarding this row. But we could just fill in the last cell.
+
 T24..  Centered columns not getting detected correctly
 
+
+
+[OCR]
 Once we identify the locations of the summary statistics, we can zoom in on the sub-region 
 of the table data and redo the OCR.
   Doing that when we can identify the MEAN or GRAND .
 
 Find the horizontal lines marking the bottom of the header or the start of the footer
 and throw away the footer and deal with the header separately.
-  Have pdftohtml emit rectangles, lines, etc.
-  Is pdftohtml calling ghostscript? No - use dtruss to verify this.
-
-pdftohtml sometimes combines words, e.g. in T24...
-  1437 APB W01...
- But not
-  20 ANZA
- So these are separate. But we have contextual information that tells us if
- an entry here doesn't start with a number, then take the entry before it.
-  The are ordered by vertical position.
+  [done] Have pdftohtml emit rectangles, lines, etc.
+  [No] Is pdftohtml calling ghostscript? No - use dtruss to verify this.
 
 
 
@@ -28,6 +26,7 @@ are close.
   See T44Durum  Central Valley RSI  with the RSI in a separate column from Centrall Valley.
 
 
+* This is a leptonica/tesseract issue
 Merge bboxes that are very close horizontally and approximately the same height.
 e.g. "1981-118-12.png"    Yiel  and d in the 3rd column of the header are 2 separate boxes.
      UC 566 but these are actually two separate wors.
@@ -37,6 +36,15 @@ e.g. "1981-118-12.png"    Yiel  and d in the 3rd column of the header are 2 sepa
 
 
 ----------------------
+
+[Fixed] pdftohtml sometimes combines words, e.g. in T24...
+  1437 APB W01...
+ But not
+  20 ANZA
+ So these are separate. But we have contextual information that tells us if
+ an entry here doesn't start with a number, then take the entry before it.
+  The are ordered by vertical position.
+
 
 
 [done] order the values within a column by their height in the page.
