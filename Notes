@@ -61,7 +61,8 @@ T16 - some text mixed between adjacent columns Type and Parentage
    So the column with 45 would come to 43. There are 3 columns with 43, and 2 with 16 & 27 to make up the 43.
 
 
-T06 - In column 4, we have odd boxes.  F_6, i.e. F subscript 6 or 7.  This makes multiple boxes.
+T06 -  Missing value in the 4th column.
+   [Fixed] In column 4, we have odd boxes.  F_6, i.e. F subscript 6 or 7.  This makes multiple boxes.
      We need to recombine these.  e.g. F7 CMB85A
 
 T13 - one column  split into two.
@@ -100,7 +101,6 @@ T38 -
  38  two columns in the result are split which would make one column.
 
 T43 - list
-T54 -  one column broken into 2. -midpoint issue versus right of the last group should do this.
 20
 23
 T34
@@ -135,6 +135,7 @@ T24 - works with simple mergeHorizontalBoxes, i.e. when we only check bottoms ar
       Need to merge these afterwards given that they have the same bottom/top and are in the same column.
 
 
+T54 -  one column broken into 2. -midpoint issue versus right of the last group should do this.
 
 
 T26  

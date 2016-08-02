@@ -260,19 +260,12 @@ if(nrow(bbox) == 44) browser()
 
    o = order(bbox[, "bottom"], decreasing = TRUE)
    bbox = bbox[o, ]
-#   tmp = cut(bbox[, "bottom"], unique(c(0,  bbox[, "bottom"] - median(-diff(bbox[, "bottom"]))*.5, Inf)))
-#   tt = table(tmp)
-   tt = table(bbox[, "bottom"])
+   tmp = cut(bbox[, "bottom"], unique(c(0,  bbox[, "bottom"] - median(-diff(bbox[, "bottom"]))*.5, Inf)))
+   tt = table(tmp)
+#   tt = table(bbox[, "bottom"])
    if(any(tt > 1)) {
-       for(i in as.integer(names(tt[tt > 1]))) {
-           i = bbox[, "bottom"] == i
-           tmp = bbox[i,]
-           bbox = bbox[!i,]
-           txt = paste(rownames(tmp), collapse = "")
-           m = data.frame(left = min(tmp[,1]), bottom = tmp[1, 2], right = max(tmp[,3]), top = max(tmp[,4]), center = NA, text = txt)
-           rownames(m) = txt
-           bbox = rbind(bbox, m)    
-       }
+      bbox =  by(bbox, tmp, combineHBoxes)
+      bbox = do.call(rbind, bbox)
    }
   
    bbox
@@ -281,9 +274,11 @@ if(nrow(bbox) == 44) browser()
 combineHBoxes =
 function(els)
 {
-    
-
-
+    # Mark the subscripts in some way in the text e.g. _{val} or [val] or <sub>val</val>
+    txt = paste(els$text, collapse = "")
+    m = data.frame(left = min(els[,1]), bottom = els[1, 2], right = max(els[,3]), top = max(els[,4]), center = NA, text = txt)
+    rownames(m) = txt
+    m
 }
 
 # This is just for helping to verify the results quickly
