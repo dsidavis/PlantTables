@@ -28,11 +28,11 @@ T44 is wrong!!!  4 column has content from 3rd column. This happens with the old
   To do with having to merge cells together within columns. Similar to T16.
   If we can fix these in guessCells(), then that approach will work.
 
+In T16, we have dropped the subscript 6 on the F6Colter
 
-[Fixed] T24 is wrong with new threshold mechanism. Needs 10.  With the dynamic mechanism, we need 24 in a column, not 10.
-    12 is the magic number. And there are 40 lines.  Using .3 * numLines as the threshold, by experimentation.
+* T44 *
 
-
+Checked the data frames: T44 is wrong. See above.  Others are correct.
 $data.frame
 [1] "T02" "T06" "T16" "T20" "T24" "T40" "T44"
 
@@ -47,10 +47,12 @@ $RegularGrid
 
 
 
- Data frames that have an NAs:
- sapply(b[["data.frame"]], function(x) sum(sapply(x, function(x) sum(is.na(x)))))
- T06 T20 T24 T40 T44 
-  0   0   0   0   0 
+Data frames that have an NAs:
+sapply(z[ b[["data.frame"]] ], function(x) sum(sapply(x, function(x) sum(is.na(x)))))
+T02 T06 T16 T20 T24 T40 T44 
+  1   1   0   6   0   1   0 
+
+sapply(z[ b$Reg ], function(x) sum(sapply(x, function(x) sum(is.na(x)))))
 
 
 T39 
@@ -58,6 +60,10 @@ T39
 
   What if we broke the table into sub-parts based on the lines for CULTIVARS, ADVANCED LINES, TRITICALE
     Would still have to repair the column if we wanted to put them back together.  Match column names.
+
+
+
+----------------------
 
 T16
  currently breaking the Type column into 2 with lots of NAs.
@@ -75,6 +81,8 @@ T02  too few cells so have to set the threshold differently.
 
 
 
+[Fixed] T24 is wrong with new threshold mechanism. Needs 10.  With the dynamic mechanism, we need 24 in a column, not 10.
+    12 is the magic number. And there are 40 lines.  Using .3 * numLines as the threshold, by experimentation.
 
 
 ------
