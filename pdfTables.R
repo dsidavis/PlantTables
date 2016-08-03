@@ -284,11 +284,13 @@ function(bb, footerRX, show = TRUE, threshold = NA, ...)
 if(FALSE)
     cols.left = locateColumns(bb, ...)
 else {
+    numLines = length(unique(bb[, "bottom"]))
     if(is.na(threshold)) {
-       numLines = length(unique(bb[, "bottom"]))
        threshold = ceiling(numLines*.3)
 cat("threshold =", threshold, "\n")
-    }
+    } else if(threshold < 1)
+       threshold = threshold * numLines
+    
     cols = findCols(bb[, 3], threshold,  ...)
     cols.left = findCols(bb[,1], threshold, ...)
     bb = cbind(bb, center = (bb[, 1]  + bb[, 3])/2)    
