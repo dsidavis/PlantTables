@@ -27,19 +27,19 @@ lines in the table.
 
 ## Notes
 
-We have only read the bodies of the table, not the headers.   We can do this later.
+* We have only read the bodies of the table, not the headers.   We can do this later.
 
-We  removed the columns with the rankings (i.e. with the numbers in parantheses).
-This makes it easier to process the table. And of course, we can recalculate these.
+* We  removed the columns with the rankings (i.e. with the numbers in parantheses).
+  This makes it easier to process the table. And of course, we can recalculate these.
 
-We removed the rows after MEAN,  and also any other content we manually identified as being in the footer
-of the table.
+* We removed the rows after MEAN,  and also any other content we manually identified as being in the footer
+  of the table.
 
-We removed an "num ENTRIES" at the bottom of the table's body where this indicated how many rows there
-were in the table.
+* We removed an "num ENTRIES" at the bottom of the table's body where this indicated how many rows there
+  were in the table.
 
-We discarded any blank cells that were in the PDF. These were typically in the header or to the side
-of the table's content.
+* We discarded any blank cells that were in the PDF. These were typically in the header or to the side
+  of the table's content.
 
 The first file is just quite different and requires a different strategy. The cells are muti-line  text.
 We can find the rows based on the lines and we should be able to use the column location code to
