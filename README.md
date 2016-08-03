@@ -5,17 +5,27 @@ Reading data from PDF files - both regular PDFs and PDFS consisting of scanned i
 For the regular PDF files (i.e. 2004 and beyond), we can read all but the first of the T* files at
 this point.
 
+The data frames are available in 2004Tables.rds.
+
 ### Note
 To use the code here, you need a modified version of the pdftohtml software that is available from
 the git repository (https://github.com/dsidvis/pdftohtml).  This differs from the regular pdftohtml
 in that it emits lines and rectangles which we use for detecting the headers and footers of many of the tables.
 
-
-```
+We generate the data frames from the PDF documents with the following code
+```r
 allFiles = list.files("2004", pattern = "^T.*pdf$", full.names = TRUE)
 z = sapply(allFiles, function(x) { print(x); getColumnData(x, show = FALSE) })
 z[[get2004Filename("T39")]] = getColumnData("T39", threshold = 18)
 ```
+As you can see, T39 needs some manual assistance. This is essentially because it contains a very
+large number of missing values and also has part of a column with no content at all (Rainfed Tests
+2003-04 for TRITICALE).  The same approach works, but requires us to tune it.
+The value of threshold is the minimum number of entries/cells in a column to consider it a possible
+column.  Ordinarily, the number is lower and dynamically determined by the (estimated) number of
+lines in the table. 
+
+.. Notes
 
 We have only read the bodies of the table, not the headers.   We can do this later.
 
