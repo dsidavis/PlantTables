@@ -48,7 +48,6 @@ function(file, doc = convertPDF2XML(file),
     bb = discardBlanks(bb, p)
 
 
-
        # Exploiting contextual knowledge about tables that have just Mean ..... in the last row.
     i = grepl("^Mean|ENTRIES", rownames(bb))
       # If there is a cell with a value Mean, then it is probably on the bottom row.
@@ -60,7 +59,7 @@ function(file, doc = convertPDF2XML(file),
         if(min(bb[!i, "bottom"]) > pos[2])
           bb = bb[!i,]
     }
-#browser()
+
     i = rownames(bb) == " -"
     bb[i, "right"] = bb[i, "right"] - 10 
     
@@ -68,6 +67,65 @@ function(file, doc = convertPDF2XML(file),
        showBoxes(p, bb, str.cex = .8)
 
     invisible(getColsFromBBox(bb, footerRX, show))
+}
+
+
+guessCells =
+function(bb)
+{
+  txt = rownames(bb)
+  bb = as.data.frame(bb)
+  bb$text = txt
+  
+  btm = unique(bb[, "bottom"])
+  top = unique(bb[, "top"])
+  
+  lines = split(bb, bb[, "bottom"])
+  ncells = unique(sapply(lines, nrow))
+  if(length(ncells) != 1) {
+     # not all have the same number of cells.
+     # let's see if we should collapse some of the boxes that are close together.
+     # see merge... below.
+  }
+  bbnew = do.call(rbind, lines)
+  bb$column = rep(1:ncells, length(lines))
+
+  cols  = split(bb, bb$column)
+  
+  
+}
+
+colAlignment =
+function(bb)
+{
+  if(all(bb[, "left"] == bb[1, "left"]))
+     return("left")
+  else if(all(bb[, "right"] == bb[1, "right"]))
+     return("right")
+
+  bb[, "center"] = (bb[, "left"] + bb[, "right"]) / 2
+  if(all(bb[, "center"] == bb[1, "center"]))
+     return("center")
+
+
+  w = bb[, "right"] - bb[, "left"]
+  if(colAlignmentFuzzy(bb[, "left"], w))
+      return("left")
+  if(colAlignmentFuzzy(bb[, "right"], w))
+      return("right")
+  if(colAlignmentFuzzy(bb[, "center"], w))
+      return("center")         
+
+  
+# Work harder to handle the case
+  return(NA)     
+}
+
+colAlignmentFuzzy =
+function(vals, widths, threshold = .9)    
+{
+  tt = table(vals)
+  (max(tt) >= threshold * length(vals) && diff(range(vals)) < 5)  || diff(range(vals)) < 2 # some function of the widths.
 }
 
 discardBlanks =
@@ -171,11 +229,22 @@ else {
     cols.left = findCols(bb[,1], ...)
     bb = cbind(bb, center = (bb[, 1]  + bb[, 3])/2)    
     cols.mid = findCols(bb[, "center"], ...)
+
+if(FALSE) {
+browser()        
+pos = c(bb[, "left"], bb[, "right"], bb[, "center"])
+label = rep(c("l", "r", "c"), each = nrow(bb))
+tt = table(round(pos/10))
+tt[tt > 10]    
+k =  findCols(pos)
+adj = label[ match(k, pos)]
+}
+
 } 
 
      # get the mid points between each of the cols.left.
      # Probably need to make this more complex to handle the centered columns, etc.
-    splits = c(0, cols.left[-length(cols.left)]) + diff(c(0, cols.left))/2
+    splits = c(0, cols.left[-length(cols.left)]) + diff(c(0, cols.left))/4
     
     if(show){
        abline(v = cols, col = "red")        
