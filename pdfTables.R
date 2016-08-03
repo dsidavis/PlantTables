@@ -18,7 +18,9 @@ getColumnData =
 function(file, doc = convertPDF2XML(file),
            #doc = pdfMinerDoc(file, removeHeader = FALSE, removeZeroWidthLines = FALSE),
           show = TRUE,
-          footerRX = "^(MEAN|Rating scale|Analysis provided by|Numbers? in parentheses|SOURCE:)", showPDF = FALSE, ...)
+          footerRX = "^(MEAN|Rating scale|Analysis provided by|Numbers? in parentheses|SOURCE:)",
+          ignoreLabels =  "\\( ?[0-9]+\\)",
+          showPDF = FALSE, ...)
 {
      # Just for my convience so I can call this with getColumnData("T22")
     if(missing(doc) && !file.exists(file))
@@ -51,9 +53,10 @@ function(file, doc = convertPDF2XML(file),
     if(length(bodyY))
        bb = bb[ bb[, "bottom"] < bodyY[1] &  bb[, "bottom"] > bodyY[2], ]
 
-
+    if(length(ignoreLabels) && !is.na(ignoreLabels))
+       bb = bb[ ! grepl(ignoreLabels, rownames(bb)), ]
+    
     bb = discardBlanks(bb, p)
-
 
        # Exploiting contextual knowledge about tables that have just Mean ..... in the last row.
     i = grepl("^Mean|ENTRIES", rownames(bb))
@@ -86,14 +89,26 @@ function(file, doc = convertPDF2XML(file),
 guessCells =
 function(bb)
 {
+#temporary
+#bb = bb[bb[, "bottom"] != 542,]
+#browser()
+  bb = orderBBox(bb)
 
   txt = rownames(bb)
   bb = as.data.frame(bb)
+  rownames(bb) = NULL
   bb$text = txt
+
+
+   # if there are bottom values that are close to another box, move them.
+   # Have to be careful about this.
+  dd = diff(c( bb[1, "bottom"], bb[, "bottom"]))
+  i = which(dd < 0 & dd > -3)
+#VECTORIZE
+#!!!!  bb[ bb[i, "b ottom"] = bb[ , "bottom"]
+
   
-  btm = unique(bb[, "bottom"])
-  top = unique(bb[, "top"])
-  
+#  lines = by(bb, bb[, "bottom"], mergeHorizontalBoxes)
   lines = split(bb, bb[, "bottom"])
   ncells = unique(sapply(lines, nrow))
   if(length(ncells) != 1) {
