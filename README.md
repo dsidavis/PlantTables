@@ -25,7 +25,7 @@ The value of threshold is the minimum number of entries/cells in a column to con
 column.  Ordinarily, the number is lower and dynamically determined by the (estimated) number of
 lines in the table. 
 
-.. Notes
+## Notes
 
 We have only read the bodies of the table, not the headers.   We can do this later.
 
