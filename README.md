@@ -47,7 +47,7 @@ identify the columns also.  So not very difficult.
 
 
 ### Reading  APR2004LST file
-To read the APR2004LST.pdf file, see getLST.R.
+To read the APR2004LST.pdf file, see [getLST.R](getLST.R).
 This doesn't deal with the one entry that wraps/extends onto 2 lines, the very last.
 
 #### Files
@@ -74,7 +74,7 @@ to it from R.
 We need an image of each page to pass to tesseract.
 So first we need to convert the multi-page PDF documents into separate pages.
 We use [pdfbox](https://pdfbox.apache.org/) for this and the R
-function `splitPDFs()` and `splitPDF()` in  [pdfSPlitImages.R](pdfSPlitImages.R) do this.
+function `splitPDFs()` and `splitPDF()` in  [pdfSplitImages.R](pdfSplitImages.R) do this.
 After extracting each page, we convert the single-page PDF to a PNG file, again using pdfbox.
 The R function `pdfToImage()` does this.
 
