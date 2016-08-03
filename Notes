@@ -16,7 +16,7 @@ In guessCells()  we move any box up 1 if another box is 1 unit above it.  This f
 
 
 Get the column headers!
-
+o = getColumnData("T55")
 
 allFiles = c(sprintf("T0%d", 1:9), sprintf("T%d", 11:56))
 z = sapply(allFiles, function(x) { print(x); getColumnData(x) })
@@ -24,16 +24,25 @@ k = sapply(z, function(x) class(x)[1])
 table(k)
 b = split(names(k), k)
 
+T44 is wrong!!!  4 column has content from 3rd column. This happens with the old threshold of 10 also.
+  To do with having to merge cells together within columns. Similar to T16.
+  If we can fix these in guessCells(), then that approach will work.
+
+
+[Fixed] T24 is wrong with new threshold mechanism. Needs 10.  With the dynamic mechanism, we need 24 in a column, not 10.
+    12 is the magic number. And there are 40 lines.  Using .3 * numLines as the threshold, by experimentation.
+
 
 $data.frame
-[1] "T06" "T20" "T24" "T40" "T44"
+[1] "T02" "T06" "T16" "T20" "T24" "T40" "T44"
 
 $list
-[1] "T01" "T02" "T14" "T16" "T39"
+[1] "T01" "T39"
 
 $RegularGrid
- [1] "T03" "T04" "T05" "T07" "T08" "T09" "T11" "T12" "T13" "T15" "T17" "T18" "T19" "T21" "T22" "T23" "T25" "T26" "T27" "T28" "T29" "T30" "T31" "T32" "T33" "T34" "T35" "T36"
-[29] "T37" "T38" "T41" "T42" "T43" "T45" "T46" "T47" "T48" "T49" "T50" "T51" "T52" "T53" "T54" "T55" "T56"
+ [1] "T03" "T04" "T05" "T07" "T08" "T09" "T11" "T12" "T13" "T14" "T15" "T17" "T18" "T19" "T21" "T22" "T23" "T25" "T26" "T27" "T28" "T29" "T30" "T31" "T32" "T33" "T34" "T35"
+[29] "T36" "T37" "T38" "T41" "T42" "T43" "T45" "T46" "T47" "T48" "T49" "T50" "T51" "T52" "T53" "T54" "T55" "T56"
+
 
 
 
@@ -47,6 +56,9 @@ $RegularGrid
 T39 
   Rainfed Tests columns for the TRITICALE section is entirely missing. This causes guessCells to fail.
 
+  What if we broke the table into sub-parts based on the lines for CULTIVARS, ADVANCED LINES, TRITICALE
+    Would still have to repair the column if we wanted to put them back together.  Match column names.
+
 T16
  currently breaking the Type column into 2 with lots of NAs.
  The subscript on the  F_6Colter is one issue causing problems for the guessCells().
@@ -55,22 +67,34 @@ T16
    But could check ignore those that are all within n (e.g. 4) units of another bottom.
    
 
-T05 T14 & 15. 
+T02  too few cells so have to set the threshold differently.
+    With 6 of the 10 needed to identify the columns. So we dynamically set the threshold. For the other tables found by this 
+    method of identifying columns, the threshold actually goes up beyond 10.
+
+
+
+
+
+
+
+------
+
+T05 15. 
   For Mark's data, what if we add a cell when there is a - to the left of it.  
   We need to know that these columns are ranks.  So need to look at others.
 
-  What if we just remove the rows that look like ranks!!!!!
+  [Done] What if we just remove the rows that look like ranks!!!!!
 
-
-T55 has a few cells whose bottom is 1 down from their siblings. In guessCells() we try to fix these.
 
 
 T14 - footer line is broken into 2. Slight gap after Madera column.
   Doesn't discard the header.  But this is because of the weird line in the footer.
+  If we determine the 2 lines identify the header, guessCells() works. 
 
+
+
+T55 has a few cells whose bottom is 1 down from their siblings. In guessCells() we try to fix these.
 T15 - lots of - in the table.
-------
-
 
 Problems/Issues - 18 at present
 T19  presence of many -  make it look as if there are two columns within the  same area.  This is because we are not using the cols.mid for this

@@ -6,6 +6,28 @@ library(CVRead)
 #file = "2004/T20WinWheatList04.pdf"
 #file = "2004/T28SacDeltaWheat04.pdf"
 
+
+# For the scanned documents.
+library(Rtesseract)
+getScannedCols =
+function(file, show = TRUE)
+{
+    ts = tesseract(file)
+    Recognize(ts)
+    bbox = BoundingBoxes(ts)
+
+    if(show) 
+       plot(ts, bbox = bbox, cropToBoxes = TRUE, margin = .005)
+    
+    colnames(bbox) = c("left", "bottom", "right", "top")
+    m = max(bbox[, c(2,4)])
+    bbox[,c(2, 4)] = m - bbox[, c(2,4)]
+
+    
+    getColsFromBBox(bbox, "GRAND|MEAN", show)
+}
+
+
 get2004Filename =
 function(file)
 {
@@ -50,8 +72,18 @@ function(file, doc = convertPDF2XML(file),
 
       # Find the body of the table by looking for wide lines
     bodyY = findBody(bb, doc[[1]], lines = lines)
-    if(length(bodyY))
+    if(length(bodyY) == 2)
        bb = bb[ bb[, "bottom"] < bodyY[1] &  bb[, "bottom"] > bodyY[2], ]
+    else if(is.matrix(bodyY) && nrow(bodyY) > 3) {
+       # many lines hopefully separating all the lines.
+
+ tmp = rownames(bb)
+ dd = as.data.frame(bb)
+ rownames(dd) = NULL
+ dd$text = tmp
+ byLine = split(dd, cut( dd[, "top"], c(Inf, bodyY[, "top"])))
+#      rowByLines()
+    }
 
     if(length(ignoreLabels) && !is.na(ignoreLabels))
        bb = bb[ ! grepl(ignoreLabels, rownames(bb)), ]
@@ -82,16 +114,13 @@ function(file, doc = convertPDF2XML(file),
       return(structure(ans, class = c("RegularGrid", class(ans))))
    }
 
-    invisible(getColsFromBBox(bb, footerRX, show))
+    invisible(getColsFromBBox(bb, footerRX, show, ...))
 }
 
 
 guessCells =
 function(bb)
 {
-#temporary
-#bb = bb[bb[, "bottom"] != 542,]
-#browser()
   bb = orderBBox(bb)
 
   txt = rownames(bb)
@@ -102,17 +131,22 @@ function(bb)
 
    # if there are bottom values that are close to another box, move them.
    # Have to be careful about this.
+#??? Handle more than a 1 unit difference.
+#browser()    
   dd = diff(c( bb[1, "bottom"], bb[, "bottom"]))
-  i = which (dd == -1)  # which(dd < 0 & dd > -3)
-  w = bb[, "bottom"] %in% bb[i, "bottom"]
-  bb[ w, "bottom"] = bb[w, "bottom"] + 1
-#VECTORIZE
-#!!!!  bb[ bb[i, "b ottom"] = bb[ , "bottom"]
+  for(delta in c(-1, -2)) {
+      i = which (dd == delta)  # which(dd < 0 & dd > -3)
+      w = bb[, "bottom"] %in% bb[i, "bottom"]
+      bb[ w, "bottom"] = bb[w, "bottom"] - delta
+      # Need to merge the boxes that are adjacent.
+  }
+
 
   
 #  lines = by(bb, bb[, "bottom"], mergeHorizontalBoxes)
   lines = split(bb, bb[, "bottom"])
   ncells = unique(sapply(lines, nrow))
+
   if(length(ncells) != 1) {
      # not all have the same number of cells.
      # let's see if we should collapse some of the boxes that are close together.
@@ -195,40 +229,27 @@ function(bbox, page, threshold = .75, linesBB = getLines(page))
   if(!any(isAcrossPage))
      return(numeric()) # c(page.dims[1], 0))
 
+  
   ll = linesBB[isAcrossPage,]
   ll = ll[order(ll[, "bottom"], decreasing = TRUE), ]
   if(nrow(ll) == 3)
     ll[2:3, "bottom"]
-  else {
+  else if(nrow(ll) %in% c(1,  2)) {
+        # T14 has broken line segments for the footer so we don't get 3.
+        # and it has two lines for the header
+        # Compute proortion of cells above the second line and below the second line
+     return(c(min(ll[, "bottom"]), 0))
+  } else {
      warning("take a look in", docName(page))
-     return(numeric())
+     return(ll)
   }
 }
 
 
-# For the scanned documents.
-library(Rtesseract)
-getScannedCols =
-function(file, show = TRUE)
-{
-    ts = tesseract(file)
-    Recognize(ts)
-    bbox = BoundingBoxes(ts)
-
-    if(show) 
-       plot(ts, bbox = bbox, cropToBoxes = TRUE, margin = .005)
-    
-    colnames(bbox) = c("left", "bottom", "right", "top")
-    m = max(bbox[, c(2,4)])
-    bbox[,c(2, 4)] = m - bbox[, c(2,4)]
-
-    
-    getColsFromBBox(bbox, "GRAND|MEAN", show)
-}
 
 
 getColsFromBBox =
-function(bb, footerRX, show = TRUE, ...)
+function(bb, footerRX, show = TRUE, threshold = NA, ...)
 {    
     pageWidth = diff(range(bb))
 
@@ -257,11 +278,16 @@ function(bb, footerRX, show = TRUE, ...)
 
 if(FALSE)
     cols.left = locateColumns(bb, ...)
-else {    
-    cols = findCols(bb[, 3], ...)
-    cols.left = findCols(bb[,1], ...)
+else {
+    if(is.na(threshold)) {
+       numLines = length(unique(bb[, "bottom"]))
+       threshold = ceiling(numLines*.3)
+cat("threshold =", threshold, "\n")
+    }
+    cols = findCols(bb[, 3], threshold,  ...)
+    cols.left = findCols(bb[,1], threshold, ...)
     bb = cbind(bb, center = (bb[, 1]  + bb[, 3])/2)    
-    cols.mid = findCols(bb[, "center"], ...)
+    cols.mid = findCols(bb[, "center"], threshold, ...)
 
 if(FALSE) {
 browser()        
@@ -278,7 +304,7 @@ adj = label[ match(k, pos)]
      # get the mid points between each of the cols.left.
      # Probably need to make this more complex to handle the centered columns, etc.
     splits = c(0, cols.left[-length(cols.left)]) + diff(c(0, cols.left))/4
-    
+
     if(show){
        abline(v = cols, col = "red")        
        abline(v = cols.left, col = "blue")
@@ -330,7 +356,7 @@ function(bbox, threshold = 10, scale = 10)
 }
 
 findCols =
-function(pos, threshold = 10, scale = 10)  # length(pos)*.85
+function(pos, threshold = 10, scale = 10, numLines = NA)  # length(pos)*.85
 {
     tt = table(pos/scale)
     cols = as.numeric(names(tt)[ tt > threshold ])* scale
