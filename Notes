@@ -30,6 +30,14 @@ T44 is wrong!!!  4 column has content from 3rd column. This happens with the old
 
 In T16, we have dropped the subscript 6 on the F6Colter
 
+T39 works with a threshold = 18 argument.
+    o = getColumnData("T39", threshold = 18)
+    18 of 40 rows. So a .45 threshold.
+    We should be able to do better as the -'s are really lined up.
+    But the completely missing cells in Rainfed tests may cause this problem.
+    .45 threshold does not work for T24.
+
+
 * T44 *
 
 Checked the data frames: T44 is wrong. See above.  Others are correct.
