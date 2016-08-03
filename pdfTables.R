@@ -116,6 +116,7 @@ function(file, doc = convertPDF2XML(file),
    ans = guessCells(bb)
    if(!is.null(ans)) {
       ans = toTable( lapply(ans, `[[`, "text") )
+      ans = ans[rev(1:nrow(ans)), ]
       return(structure(ans, class = c("RegularGrid", class(ans))))
    }
 
@@ -150,22 +151,80 @@ function(bb)
   
 #  lines = by(bb, bb[, "bottom"], mergeHorizontalBoxes)
   lines = split(bb, bb[, "bottom"])
-  ncells = unique(sapply(lines, nrow))
+  ncells = sapply(lines, nrow)
 
-  if(length(ncells) != 1) {
+  if(length(unique(ncells)) != 1) {
      # not all have the same number of cells.
      # let's see if we should collapse some of the boxes that are close together.
      # see merge... below.
       # We may be missing cells in columns. Can we infer this
       # Can we look at the previous column and see if there is " -" there. If so, a missing rank is okay.
       # But we have a chicken and egg problem in that we can identify
-    return(NULL)
-  }
-  bbnew = do.call(rbind, lines)
-  bb$column = rep(1:ncells, length(lines))
 
-  cols  = split(bb, bb$column)
+      # Compute the most common number of cells, and if all have at least that many, we'll try to repair.
+    tt = table(ncells)
+    ml = as.integer(names(tt)[which.max(tt)])
+    if(!all(ncells >= ml))
+       return(NULL)
+
+    # Okay, see if we can repair
+    # First get the widths of the columns for the lines we think are correct, i.e. have ml columns.
+    # This is for determining if we should allow combining boxes that are not overlapping but slightl
+    # separate. This is all for T44.
+    colPos = do.call(rbind, lapply(lines[ ncells == ml ], function(x) as.numeric(t(getColPositions(x)))))
+    pos = apply(colPos[, seq(1, by = 2, length = ml)], 2, min)
+    
+    i = ncells > ml
+
+    lines[i] = lapply(lines[i], repairCells, pos)
+    if(length(unique(ncells <- sapply(lines, nrow))) > 1) {
+      return(NULL)  # failed
+    }
+  }
+  
+  bbnew = do.call(rbind, lines)
+  bbnew$column = rep(1:ncells[1], length(lines)) # all ncell values are the same at this point.
+
+  cols  = split(bbnew, bbnew$column)
 }
+
+getColPositions =
+    #
+    #  for a collection of  cells, get the left and right positions.
+    #
+function(bb)
+{
+    bb = orderBBox(bb, "left", FALSE)
+    matrix(c(bb[,'left'], bb[, 'right']), , 2, dimnames = list(NULL, c("left", "right")))
+                          # c(left = min(bb[, "left"]), right = max( bb[, "right"]))
+}
+
+repairCells =
+    #
+    #  See combineHBoxes and mergeHorizontalBoxes
+    #
+function(bb, colLocations)
+{
+    bb = orderBBox(bb, "left")
+    i = 1:(nrow(bb)-1)
+     # right part of the previous one is beyond the left part of the next one
+    w = bb[i, "left"] <= bb[i+1, "right"]
+    if(FALSE && any(w)) {
+       j = c(which(w), which(w) + 1)
+       tmp = combineHBoxes(bb[j,])
+       bb = rbind(bb[-j, ], tmp[, c("left", "bottom", "right", "top", "text")])
+    } else {
+        tt = split(bb, cut(bb[, "left"], c(colLocations, Inf), include.lowest = TRUE, right = FALSE))        
+        i = sapply(tt, nrow) > 1
+        if(any(i)) {
+           tt[i] = lapply(tt[i], combineHBoxes, FALSE)
+           do.call(rbind, tt)
+        } else
+          bb
+    }
+}
+
+
 
 colAlignment =
 function(bb)
@@ -413,11 +472,17 @@ function(bbox)
 }
 
 combineHBoxes =
-function(els)
+    #
+    # What about dropping the cells.
+    #
+function(els, addCenter = TRUE)
 {
     # Mark the subscripts in some way in the text e.g. _{val} or [val] or <sub>val</val>
+    els = els[ order(els$left), ]
     txt = paste(els$text, collapse = "")
     m = data.frame(left = min(els[,1]), bottom = els[1, 2], right = max(els[,3]), top = max(els[,4]), center = NA, text = txt)
+    if(!addCenter)
+        m = m[ - 5]
     rownames(m) = txt
     m
 }
@@ -457,9 +522,9 @@ function(bbox, pageLines = numeric())
 }
 
 orderBBox =
-function(bbox)
+function(bbox, colName = "bottom",  decreasing = TRUE)
 {
-   o = order(bbox[, "bottom"], decreasing = TRUE)
+   o = order(bbox[, colName], decreasing = decreasing)
    bbox[o, ]
 }
 
