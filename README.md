@@ -5,7 +5,7 @@ Reading data from PDF files - both regular PDFs and PDFS consisting of scanned i
 For the regular PDF files (i.e. 2004 and beyond), we can read all but the first of the T* files at
 this point.
 
-The data frames are available in 2004Tables.rds.
+The data frames are available in (2004Tables.rds).
 
 ### Note
 To use the code here, you need a modified version of the pdftohtml software that is available from
