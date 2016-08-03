@@ -103,7 +103,9 @@ function(bb)
    # if there are bottom values that are close to another box, move them.
    # Have to be careful about this.
   dd = diff(c( bb[1, "bottom"], bb[, "bottom"]))
-  i = which(dd < 0 & dd > -3)
+  i = which (dd == -1)  # which(dd < 0 & dd > -3)
+  w = bb[, "bottom"] %in% bb[i, "bottom"]
+  bb[ w, "bottom"] = bb[w, "bottom"] + 1
 #VECTORIZE
 #!!!!  bb[ bb[i, "b ottom"] = bb[ , "bottom"]
 

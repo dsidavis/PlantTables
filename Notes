@@ -12,6 +12,8 @@ Because of filling in the missing cells, we are getting data frames which are no
 
 When determining the `splits` locations, try to back up to the rightmost value in the previous column.
 
+In guessCells()  we move any box up 1 if another box is 1 unit above it.  This fixes 
+
 
 Get the column headers!
 
@@ -22,15 +24,18 @@ k = sapply(z, function(x) class(x)[1])
 table(k)
 b = split(names(k), k)
 
+
 $data.frame
 [1] "T06" "T20" "T24" "T40" "T44"
 
 $list
-[1] "T01" "T02" "T05" "T14" "T16" "T39" "T55" "T56"
+[1] "T01" "T02" "T14" "T16" "T39"
 
 $RegularGrid
- [1] "T03" "T04" "T07" "T08" "T09" "T11" "T12" "T13" "T15" "T17" "T18" "T19" "T21" "T22" "T23" "T25" "T26" "T27" "T28" "T29" "T30" "T31" "T32" "T33" "T34" "T35" "T36" "T37" "T38" "T41" "T42" "T43" "T45" "T46" "T47" "T48"
-[37] "T49" "T50" "T51" "T52" "T53" "T54"
+ [1] "T03" "T04" "T05" "T07" "T08" "T09" "T11" "T12" "T13" "T15" "T17" "T18" "T19" "T21" "T22" "T23" "T25" "T26" "T27" "T28" "T29" "T30" "T31" "T32" "T33" "T34" "T35" "T36"
+[29] "T37" "T38" "T41" "T42" "T43" "T45" "T46" "T47" "T48" "T49" "T50" "T51" "T52" "T53" "T54" "T55" "T56"
+
+
 
 
  Data frames that have an NAs:
@@ -38,10 +43,9 @@ $RegularGrid
  T06 T20 T24 T40 T44 
   0   0   0   0   0 
 
-  All checked. Okay.
 
-
-
+T39 
+  Rainfed Tests columns for the TRITICALE section is entirely missing. This causes guessCells to fail.
 
 T16
  currently breaking the Type column into 2 with lots of NAs.
@@ -58,17 +62,7 @@ T05 T14 & 15.
   What if we just remove the rows that look like ranks!!!!!
 
 
-? The - values sometimes have a different bottom than the others. T05  STAB113
-    Should pdftohtml output the numeric values, not integers.
-
-
-If there are only n columns that has fewer cells, treat this as a missing value
-
-
-
-
-Note:  T35 and T36 have the same pattern of where NAs are located. Seems reasonable, but just mentioning.
-
+T55 has a few cells whose bottom is 1 down from their siblings. In guessCells() we try to fix these.
 
 
 T14 - footer line is broken into 2. Slight gap after Madera column.
