@@ -17,16 +17,7 @@ i = which(rownames(bb) == "MEAN")
 if(length(i))
   bb = bb[ bb[, "top.right.y"] <  bb[i, "top.right.y"], ]
 
-plot(ts, img = img, bbox = bb)  # TRUE)
-
-
-if(FALSE) {
-source("~/Projects/OCR/Rtesseract/R/plot.R")    
-plot.OCR(ts, bbox = bb, img = img, cropToBoxes = TRUE, margin = c(.93, 1.15))
-}
-#bb
-
-
+plot(ts, img = img, bbox = bb, cropToBoxes = TRUE)
 
 
 

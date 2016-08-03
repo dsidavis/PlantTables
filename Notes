@@ -20,7 +20,7 @@ o = getColumnData("T55")
 
 allFiles = c(sprintf("T0%d", 1:9), sprintf("T%d", 11:56))
 z = sapply(allFiles, function(x) { print(x); getColumnData(x, show = FALSE) })
-z[["T39"]] = getColumnData("T39", threshold = 18)
+z[[get2004Filename("T39")]] = getColumnData("T39", threshold = 18)
 k = sapply(z, function(x) class(x)[1])
 table(k)
 b = split(names(k), k)

@@ -14,6 +14,7 @@ in that it emits lines and rectangles which we use for detecting the headers and
 ```
 allFiles = list.files("2004", pattern = "^T.*pdf$", full.names = TRUE)
 z = sapply(allFiles, function(x) { print(x); getColumnData(x, show = FALSE) })
+z[[get2004Filename("T39")]] = getColumnData("T39", threshold = 18)
 ```
 
 We have only read the bodies of the table, not the headers.   We can do this later.
@@ -24,7 +25,7 @@ This makes it easier to process the table. And of course, we can recalculate the
 We removed the rows after MEAN,  and also any other content we manually identified as being in the footer
 of the table.
 
-We removed an "n ENTRIES" at the bottom of the table's body where this indicated how many rows there
+We removed an "num ENTRIES" at the bottom of the table's body where this indicated how many rows there
 were in the table.
 
 We discarded any blank cells that were in the PDF. These were typically in the header or to the side
@@ -41,9 +42,40 @@ This doesn't deal with the one entry that wraps/extends onto 2 lines, the very l
 
 #### Files
 
+1.  [pdfTables.R](pdfTables.R)
+  This provides the computations on the XML documentation to get the content as a data frame.
 1.  [readPDF2HTML.R](readPDF2HTML.R)
-
-
+  This arranges to convert a PDF documentation to XML and then read it into R.  It also provides
+  functionality to process the XML document into the bounding box matrix that we need for all the computations.
+1.  [getLST.R](getLST.R)
 
 
 # The Scanned PDF Documents
+
+The tables in the scanned PDFs are not dissimilar in nature to those in the regular PDF documents.
+However, we first have to use OCR (optical character recognition) to get the text and its location
+on the page. Then we can do similar computations as we did for the regular PDFs to identify
+the cells in the tables.
+
+We use [tesseract](https://github.com/tesseract-ocr) to do the OCR, and specifically the Rtesseract package that provides an interface
+to it from R.
+
+## Getting the Documents
+We need an image of each page to pass to tesseract.
+So first we need to convert the multi-page PDF documents into separate pages.
+We use [pdfbox](https://pdfbox.apache.org/) for this and the R
+function `splitPDFs()` and `splitPDF()` in  [pdfSPlitImages.R](pdfSPlitImages.R) do this.
+After extracting each page, we convert the single-page PDF to a PNG file, again using pdfbox.
+The R function `pdfToImage()` does this.
+
+
+## Rtesseract and tesseract
+You wil need to install tesseract. You can obtain it from the
+[git repository](https://github.com/tesseract-ocr/tesseract).
+See the [Installing Tesseract](https://github.com/tesseract-ocr) section of the README file.
+
+Then you can install Rtesseract.
+Clone the repository and install it locally, or alternatively use
+`devtools::install_github('dsidavis/Rtesseract')`.
+
+
