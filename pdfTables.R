@@ -6,6 +6,13 @@ library(CVRead)
 #file = "2004/T20WinWheatList04.pdf"
 #file = "2004/T28SacDeltaWheat04.pdf"
 
+get2004Filename =
+function(file)
+{
+     # vectorized
+   grep(paste0("^2004/", paste(file, collapse = "|")), list.files("2004", pattern = "pdf$", full = TRUE), value = TRUE)
+}
+
 # not ready to call it getTable() !
 getColumnData =  
 function(file, doc = convertPDF2XML(file),
@@ -15,7 +22,7 @@ function(file, doc = convertPDF2XML(file),
 {
      # Just for my convience so I can call this with getColumnData("T22")
     if(missing(doc) && !file.exists(file))
-      file = grep(paste0("^2004/", file), list.files("2004", pattern = "pdf$", full = TRUE), value = TRUE)
+       file = get2004Filename(file)
 
     if(showPDF)
        Open(file)
@@ -66,6 +73,12 @@ function(file, doc = convertPDF2XML(file),
     if(show)
        showBoxes(p, bb, str.cex = .8)
 
+   ans = guessCells(bb)
+   if(!is.null(ans)) {
+      ans = toTable( lapply(ans, `[[`, "text") )
+      return(structure(ans, class = c("RegularGrid", class(ans))))
+   }
+
     invisible(getColsFromBBox(bb, footerRX, show))
 }
 
@@ -73,6 +86,7 @@ function(file, doc = convertPDF2XML(file),
 guessCells =
 function(bb)
 {
+
   txt = rownames(bb)
   bb = as.data.frame(bb)
   bb$text = txt
@@ -86,13 +100,15 @@ function(bb)
      # not all have the same number of cells.
      # let's see if we should collapse some of the boxes that are close together.
      # see merge... below.
+      # We may be missing cells in columns. Can we infer this
+      # Can we look at the previous column and see if there is " -" there. If so, a missing rank is okay.
+      # But we have a chicken and egg problem in that we can identify
+    return(NULL)
   }
   bbnew = do.call(rbind, lines)
   bb$column = rep(1:ncells, length(lines))
 
   cols  = split(bb, bb$column)
-  
-  
 }
 
 colAlignment =

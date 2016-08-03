@@ -13,20 +13,45 @@ Because of filling in the missing cells, we are getting data frames which are no
 When determining the `splits` locations, try to back up to the rightmost value in the previous column.
 
 
-
 Get the column headers!
 
 
 allFiles = c(sprintf("T0%d", 1:9), sprintf("T%d", 11:56))
 z = sapply(allFiles, function(x) { print(x); getColumnData(x) })
-table(sapply(z, class))
-w = (sapply(z, class) == "data.frame")
-names(w)[!w]
+k = sapply(z, function(x) class(x)[1])
+table(k)
+b = split(names(k), k)
 
-df/list
-38/17
+$data.frame
+ [1] "T06" "T20" "T23" "T24" "T35" "T36" "T40" "T43" "T44" "T51"
 
-list   [1] "T01" "T02" "T03" "T04" "T05" "T13" "T14" "T15" "T16" "T19" "T34" "T38" "T39" "T53" "T54" "T55" "T56"
+$list
+ [1] "T01" "T02" "T05" "T14" "T15" "T16" "T19" "T39" "T55" "T56"
+
+$RegularGrid
+ [1] "T03" "T04" "T07" "T08" "T09" "T11" "T12" "T13" "T17" "T18" "T21" "T22" "T25" "T26" "T27" "T28" "T29" "T30" "T31" "T32" "T33" "T34" "T37" "T38" "T41" "T42" "T45" "T46"
+[29] "T47" "T48" "T49" "T50" "T52" "T53" "T54"
+
+
+ Data frames that have an NAs:
+ sapply(b[["data.frame"]], function(x) sum(sapply(x, function(x) sum(is.na(x)))))
+ T06 T20 T23 T24 T35 T36 T40 T43 T44 T51 
+  1   6  31   0  54  54   1  56   0  12 
+
+  All checked. Okay.
+
+
+
+
+T16
+ currently breaking the Type column into 2 with lots of NAs.
+
+
+
+
+
+
+Note:  T35 and T36 have the same pattern of where NAs are located. Seems reasonable, but just mentioning.
 
 
 
