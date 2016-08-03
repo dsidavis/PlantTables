@@ -1,7 +1,12 @@
 # PlantTables
-Reading data from PDF files - both regular and scanned
+Reading data from PDF files - both regular PDFs and PDFS consisting of scanned images of earlier documents.
 
+# Note
+To use the code here, you need a modified version of the pdftohtml software that is available from
+the git repository (https://github.com/dsidvis/pdftohtml).  This differs from the regular pdftohtml
+in that it emits lines and rectangles which we use for detecting the headers and footers of many of the tables.
 
+# 2004 PDF Files
 For the regular PDF files (i.e. 2004 and beyond), we can read all but the first of the T* files at this point.
 
 ```
@@ -28,7 +33,12 @@ We can find the rows based on the lines and we should be able to use the column 
 identify the columns also.  So not very difficult.
 
 
-#  APR2004LST file
+# Reading  APR2004LST file
 To read the APR2004LST.pdf file, see getLST.R.
 This doesn't deal with the one entry that wraps/extends onto 2 lines, the very last.
+
+# Files
+
+1.  [readPDF2HTML.R](readPDF2HTML.R)
+
 

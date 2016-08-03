@@ -34,6 +34,10 @@ function(x)
   match(x, sort(x))    
 
 get2004Filename =
+    #
+    # Map the simple name Tnumber  to the actual file name
+    # e.g. get2004Filename("T04")
+    # This is vectorized.
 function(file)
 {
      # vectorized
@@ -53,7 +57,7 @@ function(file, doc = convertPDF2XML(file),
     if(missing(doc) && !file.exists(file))
        file = get2004Filename(file)
 
-    if(showPDF)
+    if(showPDF && exists("Open", mode = "function"))  # Duncan's own function to call open() on OSX.
        Open(file)
     
     if(is(doc, "PDFMinerDoc")) 
@@ -61,43 +65,52 @@ function(file, doc = convertPDF2XML(file),
     else 
       bb = readPDF2XML(doc = doc)
 
+      # Get rid of the cell that starts with "TABLE <number>"
     bb = bb[!grepl("^[[:space:]]*TABLE [0-9]{1,}", rownames(bb)), ]
+
       # Now see if we can throw out boxes that have lines under them
-      # We may actually just know these as CULTIVARS and ADVANCED LINES
+      # We may actually just know these as CULTIVARS and ADVANCED LINES, TRITICALE
+      # But we could find ones with lines under them - BUT in the body of the table. So need to find that first.
+      # So move this below bodyY but that causes grief as we 
     bb = bb[!grepl("^CULTIVARS|ADVANCED LINES|TRITICALE$", rownames(bb)), ]    
     
 
+      # Identify cells that are in the footer and then discard the cells below this.
     i = grep(footerRX, rownames(bb))
     if(length(i))
         bb = bb[ bb[,2] > bb[i[1], 2] + 2, ]
 
+      # First page since each PDF has only one page.
     p = doc[[1]]
     lines = getLines(p)
-
 
       # Find the body of the table by looking for wide lines
     bodyY = findBody(bb, doc[[1]], lines = lines)
     if(length(bodyY) == 2)
        bb = bb[ bb[, "bottom"] < bodyY[1] &  bb[, "bottom"] > bodyY[2], ]
     else if(is.matrix(bodyY) && nrow(bodyY) > 3) {
+        # FOR the first file.
        # many lines hopefully separating all the lines.
-
- tmp = rownames(bb)
- dd = as.data.frame(bb)
- rownames(dd) = NULL
- dd$text = tmp
- byLine = split(dd, cut( dd[, "top"], c(Inf, bodyY[, "top"])))
+#exploring code        
+        tmp = rownames(bb)
+        dd = as.data.frame(bb)
+        rownames(dd) = NULL
+        dd$text = tmp
+        byLine = split(dd, cut( dd[, "top"], c(Inf, bodyY[, "top"])))
 #      rowByLines()
     }
 
+         # Discard any cells in which we are NOT interested, e.g., the ranks.
     if(length(ignoreLabels) && !is.na(ignoreLabels))
        bb = bb[ ! grepl(ignoreLabels, rownames(bb)), ]
-    
+
+      # Discard text elements that appear in the PDF but have no content.
+      # These are typically below the header or to the left of the table itself.
     bb = discardBlanks(bb, p)
 
        # Exploiting contextual knowledge about tables that have just Mean ..... in the last row.
     i = grepl("^Mean|ENTRIES", rownames(bb))
-      # If there is a cell with a value Mean, then it is probably on the bottom row.
+      # If there is a cell with a value Mean, then it is probably below the real content of the table.
       # If so, we want to kill it off. We have to compare it to the other cells  in the tables.
     if(any(i)) {
           # find the other cells in this same row.
@@ -107,12 +120,17 @@ function(file, doc = convertPDF2XML(file),
           bb = bb[!i,]
     }
 
-    i = rownames(bb) == " -"
-    bb[i, "right"] = bb[i, "right"] - 10 
+       # Move the missing value indicator cells a little bit to the left. They
+# This is no longer necessary, but it is okay.    
+#    i = rownames(bb) == " -"
+#    bb[i, "right"] = bb[i, "right"] - 10 
     
     if(show)
        showBoxes(p, bb, str.cex = .8)
 
+       # Here we go for the idea case that all rows have the same number of cells
+       # and that we can then figure out the entire table based on each column's left, right or centered alignment.
+       # If we get NULL back, we need to switch to the more heuristic approach in getColsFromBBox.
    ans = guessCells(bb)
    if(!is.null(ans)) {
       ans = toTable( lapply(ans, `[[`, "text") )
