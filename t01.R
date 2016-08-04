@@ -1,14 +1,14 @@
 # To read the first PDF file with the rows separated by lines and with multi-line text within each cell
 tableSepByLine =
-function(file)
+function(file, show = FALSE)
 {    
-
-    doc = convertPDF2XML("2004/T01SiteChar04.pdf")
+    doc = convertPDF2XML(file)
     bb = readPDF2XML(, doc)
     ll = getLines(doc[[1]])
 
     bb = bb[ !grepl("^ ?TABLE ", rownames(bb)), ]
-    showBoxes(, bbox = bb, str.cex = .8)
+    if(show)
+        showBoxes(, bbox = bb, str.cex = .8)
 
     bb = bboxToDF(bb)
 
@@ -48,7 +48,8 @@ function(file)
                                         # So compute the min of the min and the max of the max for these
         xx = lapply( tmp[ nc == 8 ], foo)
         pos = getOkColPositions(xx)
-        abline(v = pos, col = "red")
+        if(show)
+            abline(v = pos, col = "red")
         tmp = lapply(byLine[nc > 8], repairCells, pos)
         byLine[nc > 8] = tmp
     }
