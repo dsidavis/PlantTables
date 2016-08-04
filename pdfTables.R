@@ -384,8 +384,20 @@ function(bbox, page, threshold = .75, linesBB = getLines(page))
 
 
 getColsFromBBox =
+    # This is the more heuristic approach to identifying the rows and columns (vice-versa)
+    # than guessCells().
+    #
+    # bb - a matrix/data frame of bounding box information  for each cell we identified in the PDF/OCR
+    #      the rownames or text column contains the text.
+    # footerRX - a regular expression for identifying text identifying material in the footer below the table
+    #            and hence identifying the location of the footer and below which we  can discard bounding boxes.
+    # show - whether to create an R plot displaying the bounding boxes, the column separators, etc.
+    # threshold - see findCols
+    # numRows - the caller can specify the number of rows in the table, or we attempt to deduce it. This
+    #          influences how we determine where the columns start and end and is connected to threshold.
+    
 function(bb, footerRX = character(), show = TRUE, threshold = NA,
-         numLines = length(unique(bb[, "bottom"])), ...)
+         numRows = length(unique(bb[, "bottom"])), ...)
 {    
     pageWidth = diff(range(bb[, c(1, 3)]))
 
@@ -397,12 +409,6 @@ function(bb, footerRX = character(), show = TRUE, threshold = NA,
     }
 
     bb = bb[ ! grepl("^TABLE", rownames(bb)), ]
-
-
-
-#if(any( i <- ((bb[,3] - bb[,1]) > .25*pageWidth)))
-#    browser()
-
 
 # See if we can identify horizontal lines that span the extent of the text
 # as these are separators of the headers and content.
@@ -417,12 +423,11 @@ function(bb, footerRX = character(), show = TRUE, threshold = NA,
 if(FALSE)
     cols.left = locateColumns(bb, ...)
 else {
-    numLines = length(unique(bb[, "bottom"]))
+    numRows = length(unique(bb[, "bottom"]))
     if(is.na(threshold)) {
-       threshold = ceiling(numLines*.3)
-cat("threshold =", threshold, "\n")
+       threshold = ceiling(numRows * .3)
     } else if(threshold < 1)
-       threshold = threshold * numLines
+       threshold = threshold * numRows
     
     cols = findCols(bb[, 3], threshold,  ...)
     cols.left = findCols(bb[,1], threshold, ...)
@@ -478,13 +483,16 @@ adj = label[ match(k, pos)]
     cols = lapply(cols, function(x) gsub("\\n", "", x)) #  XML:::trim)
 
     tbl = toTable(cols)
-cat("# columns =", length(cols), class(tbl), "\n")
-if(is.list(tbl))
-  print(table(sapply(tbl, length)))
+#cat("# columns =", length(cols), class(tbl), "\n")
+#if(is.list(tbl))
+#  print(table(sapply(tbl, length)))
     invisible( tbl )
 }
 
 locateColumns =
+    #
+    #
+    #
 function(bbox, threshold = 10, scale = 10)
 {
    align = rep(c("right", "left", "center"), each = nrow(bbox))
@@ -496,7 +504,15 @@ function(bbox, threshold = 10, scale = 10)
 }
 
 findCols =
-function(pos, threshold = 10, scale = 10, numLines = NA)  # length(pos)*.85
+    #
+    # The idea here is that we take all the positions of the bounding boxes,
+    # recognize that they may not be exactly aligned so instead change the coordinat
+    # system by dividing by 10 and then grouping.
+    #  This way   143 and 145
+    #
+    #XXX We probably  need  an as.integer(pos/scale) here.
+    #
+function(pos, threshold = 10, scale = 10, numRows = NA)  # length(pos)*.85
 {
     tt = table(pos/scale)
     cols = as.numeric(names(tt)[ tt > threshold ])* scale
@@ -530,6 +546,13 @@ function(d, dropRanks = TRUE)
 #############################################
 
 mergeHorizontalBoxes =
+    #
+    # The idea here is to determine if there are entries/boxes that are very close to each other 
+    # vertically, i.e., less than half a line height apart, that we should combine into one.
+    # This is for sub/super-scripts.
+    #
+    # We should allow the caller specify the threshold/line height.
+    #
 function(bbox)
 {
    bbox = orderBBox(bbox)    
@@ -547,7 +570,12 @@ function(bbox)
 
 combineHBoxes =
     #
-    # What about dropping the cells.
+    # This is the function that actually combines boxes that are deemed to be
+    # on the same line and adjacent eventhough the PDF separated them or there is
+    # a very small gap (less than a line space) in their vertical location.
+    #
+    #
+    # What about dropping the cells.  Left to the caller.
     #
 function(els, addCenter = TRUE)
 {
@@ -596,25 +624,14 @@ function(bbox, pageLines = numeric())
 }
 
 orderBBox =
+    #
+    # Given a bbox, order the rows based on the colName given as a name or index.
+    # We can use decreasing to order them in increasing or decreasing order.
+    # The order helps us compute differences between adjacent lines or columns.
+    #
 function(bbox, colName = "bottom",  decreasing = TRUE)
 {
    o = order(bbox[, colName], decreasing = decreasing)
    bbox[o, ]
 }
 
-# This is just for helping to verify the results quickly
-
-checkMeans =
-function(d)
-{
-    sapply(d, checkMean)
-}
-
-checkMean =
-function(x)
-{
-      # remove any (rankNum)
-   x = gsub("\\([0-9]+\\)", "", x)
-   vals =  grep("^[0-9]+(\\.[0-9]+)?$", x, value = TRUE)
-   mean(as.numeric(vals))
-}

@@ -1,8 +1,10 @@
+Change findCols to use as.integer(pos/scale) to use the rounding down.
+
+
 When we can determine that a cell has a missing box, add an NA there.
   e.g. T37 and the last row for the first column.  We deal with this by recognizing the Mean and discarding this row. But we could just fill in the last cell.
 
 T24..  Centered columns not getting detected correctly
-
 
 
 [OCR]
