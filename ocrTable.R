@@ -24,9 +24,8 @@ function(file = "1990_p44.png", img = readPNG(file))
   
   plot(ts, img = img, bbox = bb, cropToBoxes = TRUE)
 
-
-  e = bb[grep("ENTRY", rownames(bb)), ]
-  bb = bb[ bb[, "top"] > e["top"] + 10  , ]
+  if(length(i <- grep("ENTRY", rownames(bb))))
+     bb = bb[ bb[, "top"] > bb[i , "top"] + 10  , ]
 
 
            # Get rid of the rank values
@@ -38,8 +37,9 @@ function(file = "1990_p44.png", img = readPNG(file))
     # The heights are backwards, i.e. going from top to bottom. So need to reverse order at the end.
 
   o = guessCells(bb)
-
+browser()
   if(is.null(o))
      o = getColsFromBBox(bb, threshold = 7, numLines = 18)
-  
+
+  o
 }
