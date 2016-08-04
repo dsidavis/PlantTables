@@ -282,7 +282,7 @@ function(bb, colLocations)
        tmp = combineHBoxes(bb[j,])
        bb = rbind(bb[-j, ], tmp[, c("left", "bottom", "right", "top", "text")])
     } else {
-        if(is.na(match(Inf, pos)))
+        if(is.na(match(Inf, colLocations)))
            colLocations = c(colLocations, Inf)
         
         tt = split(bb, cut(bb[, "left"], colLocations, include.lowest = TRUE, right = FALSE))        

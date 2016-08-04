@@ -1,0 +1,258 @@
+If there are - in the cells, then that column is centered for this 2004/ data.
+ tt = readLines("Notes"); tt = grep("^[0-9]|T", tt, value = TRUE); n =sapply(strsplit(tt, " "), `[`, 1); n = n[!is.na(n) & n != ""]; n = as.integer(gsub("^T", "", n))
+
+
+[done] recombine cells within a column that are on the same line.
+This means group by bottom + 5. (Deal with the subscripts).
+
+[done] Find lines and then identify missing cells.
+
+
+Because of filling in the missing cells, we are getting data frames which are not correct.
+
+When determining the `splits` locations, try to back up to the rightmost value in the previous column.
+
+In guessCells()  we move any box up 1 if another box is 1 unit above it.  This fixes 
+
+
+Get the column headers!
+o = getColumnData("T55")
+
+allFiles = c(sprintf("T0%d", 1:9), sprintf("T%d", 11:56))
+z = sapply(allFiles, function(x) { print(x); getColumnData(x, show = FALSE) })
+z[["T39"]] = getColumnData("T39", threshold = 18, show = FALSE)
+z[[get2004Filename("T39")]] = getColumnData("T39", threshold = 18, show = FALSE)
+k = sapply(z, function(x) class(x)[1])
+table(k)
+b = split(names(k), k)
+
+
+??? With the recent changes (about to commit), T16 has dropped back into the data frame, not the RegularGrid.
+
+
+In T16, we have dropped the subscript 6 on the F6Colter
+
+* T44 *
+
+[Fixed now] Checked the data frames: T44 is wrong. See above.  Others are correct.
+
+$data.frame
+[1] "T02" "T06" "T16" "T20" "T39" "T40"
+
+$list
+[1] "T01"
+
+$RegularGrid
+ [1] "T03" "T04" "T05" "T07" "T08" "T09" "T11" "T12" "T13" "T14" "T15" "T17" "T18" "T19" "T21" "T22" "T23" "T24" "T25" "T26" "T27" "T28" "T29" "T30" "T31" "T32" "T33" "T34"
+[29] "T35" "T36" "T37" "T38" "T41" "T42" "T43" "T44" "T45" "T46" "T47" "T48" "T49" "T50" "T51" "T52" "T53" "T54" "T55" "T56"
+
+
+
+Data frames that have an NAs:
+sapply(z[ b[["data.frame"]] ], function(x) sum(sapply(x, function(x) sum(is.na(x)))))
+T02 T06 T16 T20 T39 T40 
+  1   1   0   6 238   1 
+
+sapply(z[ b$Reg ], function(x) sum(sapply(x, function(x) sum(is.na(x)))))
+T03 T04 T05 T07 T08 T09 T11 T12 T13 T14 T15 T17 T18 T19 T21 T22 T23 T24 T25 T26 T27 T28 T29 T30 T31 T32 T33 T34 T35 T36 T37 T38 T41 T42 T43 T44 T45 T46 T47 T48 T49 T50 T51 
+  0   0   8   0   0   0   0   5   1   8  92   0   0  83   0   0  22   0   0   0   0   0   0   0   0   0   0   3  36  36  14   0   0   0  28   0   0   0   0   0   0   0   8 
+T52 T53 T54 T55 T56 
+  7   2   0  89  62 
+
+
+---------------
+
+T44 is wrong!!!  4 column has content from 3rd column. This happens with the old threshold of 10 also.
+  To do with having to merge cells together within columns. Similar to T16.
+  If we can fix these in guessCells(), then that approach will work.
+
+T39 works with a threshold = 18 argument.
+    o = getColumnData("T39", threshold = 18)
+    18 of 40 rows. So a .45 threshold.
+    We should be able to do better as the -'s are really lined up.
+    But the completely missing cells in Rainfed tests may cause this problem.
+    .45 threshold does not work for T24.
+
+  Rainfed Tests columns for the TRITICALE section is entirely missing. This causes guessCells to fail.
+
+  What if we broke the table into sub-parts based on the lines for CULTIVARS, ADVANCED LINES, TRITICALE
+    Would still have to repair the column if we wanted to put them back together.  Match column names.
+
+
+
+----------------------
+
+T16
+ currently breaking the Type column into 2 with lots of NAs.
+ The subscript on the  F_6Colter is one issue causing problems for the guessCells().
+  We want to recombine these values with a very similar value for bottom that cannot be  on the next line into a single cell.
+  mergeHorizontalBoxes assumes we have already grouped them. So we need to group by bottom and the average distance.  Could cause problems if lots of subscripts.
+   But could check ignore those that are all within n (e.g. 4) units of another bottom.
+   
+
+T02  too few cells so have to set the threshold differently.
+    With 6 of the 10 needed to identify the columns. So we dynamically set the threshold. For the other tables found by this 
+    method of identifying columns, the threshold actually goes up beyond 10.
+
+
+
+
+
+[Fixed] T24 is wrong with new threshold mechanism. Needs 10.  With the dynamic mechanism, we need 24 in a column, not 10.
+    12 is the magic number. And there are 40 lines.  Using .3 * numLines as the threshold, by experimentation.
+
+
+------
+
+T05 15. 
+  For Mark's data, what if we add a cell when there is a - to the left of it.  
+  We need to know that these columns are ranks.  So need to look at others.
+
+  [Done] What if we just remove the rows that look like ranks!!!!!
+
+
+
+T14 - footer line is broken into 2. Slight gap after Madera column.
+  Doesn't discard the header.  But this is because of the weird line in the footer.
+  If we determine the 2 lines identify the header, guessCells() works. 
+
+
+
+T55 has a few cells whose bottom is 1 down from their siblings. In guessCells() we try to fix these.
+T15 - lots of - in the table.
+
+Problems/Issues - 18 at present
+T19  presence of many -  make it look as if there are two columns within the  same area.  This is because we are not using the cols.mid for this
+T39
+T34 - need to be using the cols.mid not just cols.left.
+  1 column split into 2.
+
+T01 - content is split across lines within a cell.
+      We do have horizontal lines separating the rows!
+      The column cutting points are wrong. Not getting column 2 by itself but mixing with col 3.
+      Same with col 4 & 5
+
+T02 - too few boxes on the page to exceed the threshold for findCols.  So findCols() has to adapt dynamically to the number of boxes.
+       Also missing values of the form - and so the rankings for those rows are entirely absent (i.e. the number within the ( ) in the next "column")
+T03 - similar to T02
+T04 - similar to T02
+T05 - similar to T02
+
+T16 - some text mixed between adjacent columns Type and Parentage
+  The column split is putting two for the shor column.
+  Subscripts as in T06
+   So the column with 45 would come to 43. There are 3 columns with 43, and 2 with 16 & 27 to make up the 43.
+
+
+T13 - one column  split into two.
+
+---------------
+Problems we are beginning to know about
+
+T40  -                               previous: small column again #3
+   Okay now, but there is a missing value in the 4th column, in the middle.
+
+T20 - Missing values small columns mixing with adjacent.
+    Everything is fine except the fourth column has a lot of missing values.
+    If we know we have the columns correct, we could just fill these in.
+    Alternatively, look at each row and figure out the number of cells and fill in accordingly (easier said than done).
+   [Done] It is now the "20 Entries" at the bottom by itself.
+        Here we can see it is just a summary. But we could just add an NA to each of the other columns.
+
+
+
+---------
+Returns as List
+
+
+T38 - 
+   Seems like we might make this work if the split between columns isn't just the  mid point between the two columns
+   but the right value + 1  of all the cells in the previous columns.
+ 38  two columns in the result are split which would make one column.
+
+    Col 15 Mix Pk
+    These are split based on 4 characters and  5 characters
+    3.00 versus 15.00 
+    We need to be right justified here.
+
+T43 - list
+20
+23
+T34
+35
+36
+38 - 19 columns with same length, 2 that are split to make up the other column.
+    o[sapply(o, length) < 34]
+     right aligned.
+39 - missing values (-)	
+
+40 - one column has one less value.  There is a missing value in this column.
+43 - - and values are split.
+
+53, 54, 55, 56
+
+
+------------
+Data frames (for now!)
+
+"T07" "T08" "T09" "T11" "T12" "T17" "T18" "T21" "T22" "T24" "T25" "T26" "T27" "T28" "T29" "T30" "T31" "T32" "T33" "T35" "T36" "T37" "T41" "T42" "T44" "T45" "T46" "T47"
+"T48" "T49" "T50" "T51" "T52"
+
+
+T23 -  Too few cells in the columns with missing ranks so that the threshold doesn't add another column split.
+     French accent in Decor that is not coming out from pdftohtml properly.
+ 
+    getting confused with the  number (rank) and the - as one or two columns and missing values induced 
+        The - is being intrepreted in the adjaced column and so no values in the cells of the number/value column.
+        In the last "column" - number and rank, the terms are being mixed so much longer.
+   Need to handle the - character specially.
+
+
+
+
+Check T24 & 44 when we fix mergeHorizontalBoxes to handle the subscripts.
+T24 - works with simple mergeHorizontalBoxes, i.e. when we only check bottoms are the same.  
+     one column has two cells each with 2 boxes that have no space between them.  "a male"
+ ***  Merge  these boxes together.
+   2 centered columns at the end.
+   4 cells need to be merged into 2 cells as they are exactly adjacent  (right of one has same value as left of the next one)
+
+44 - same as 24 - adjacent cells need to be merged. But they are not exactly adjacent. 
+      Need to merge these afterwards given that they have the same bottom/top and are in the same column.
+
+
+T54 -  one column broken into 2. -midpoint issue versus right of the last group should do this.
+
+
+T06 -  Missing value in the 4th column.
+   [Fixed] In column 4, we have odd boxes.  F_6, i.e. F subscript 6 or 7.  This makes multiple boxes.
+     We need to recombine these.  e.g. F7 CMB85A
+
+
+
+T26  
+
+T21 - df now.   TABLE 21 had a space before it.
+T22 - df
+T07 - df
+T08 - df
+T09 - df
+T10 - df
+T11 - df
+T12 - df
+T17 - df
+T18 - df
+T30 - okay
+T37 - after accounting for mean.
+41,42,
+45
+46
+47
+48
+49
+50
+52
+-----
+
+
+
