@@ -14,16 +14,41 @@ in that it emits lines and rectangles which we use for detecting the headers and
 
 We generate the data frames from the PDF documents with the following code
 ```r
+source("pdfTables.R"); source("utils.R"); source("readPDF2HTML.R"); source("t01.R")
 allFiles = list.files("2004", pattern = "^T.*pdf$", full.names = TRUE)
 z = sapply(allFiles, function(x) { print(x); getColumnData(x, show = FALSE) })
-z[[get2004Filename("T39")]] = getColumnData("T39", threshold = 18)
+z[[get2004Filename("T39")]] = getColumnData("T39", threshold = 18, show = FALSE)
+z[[get2004Filename("T01")]] = tableSepByLine(get2004Filename("T01"))
 ```
 As you can see, T39 needs some manual assistance. This is essentially because it contains a very
 large number of missing values and also has part of a column with no content at all (Rainfed Tests
 2003-04 for TRITICALE).  The same approach works, but requires us to tune it.
 The value of threshold is the minimum number of entries/cells in a column to consider it a possible
 column.  Ordinarily, the number is lower and dynamically determined by the (estimated) number of
-lines in the table. 
+lines in the table.
+
+
+To test our results
+```r
+k = sapply(z, function(x) class(x)[1])
+table(k)
+b = split(names(k), k)
+```
+
+The difference between the two classes relates to the approach we ultimately used to convert
+the content to a data frame.
+* A RegularGrid means that we broke it down by line and counted the number of entries in each and
+  determined the number of columns. This gave us the table of cells - rows by columns. In some
+  cases, we had to determine missing cells and use some heuristics.
+
+* A data.frame indicates that we used a more heuristic approach than above. Instead, we had to
+  attempt to find the locations that divided columns by determining where a column started and ended
+  and where the adjacent column started and ended.  This  involves
+  * inferring whether the column is left, right or center aligned,
+  * how many entries are in a column,
+  * how to deal with missing values.
+  This is far more heuristic. Fortunately, there are only 7 in this category.
+
 
 ## Notes
 
