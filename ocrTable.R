@@ -37,7 +37,7 @@ function(file = "1990_p44.png", img = readPNG(file))
     # The heights are backwards, i.e. going from top to bottom. So need to reverse order at the end.
 
   o = guessCells(bb)
-browser()
+
   if(is.null(o))
      o = getColsFromBBox(bb, threshold = 7, numLines = 18)
 

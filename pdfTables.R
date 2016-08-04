@@ -1,15 +1,17 @@
 # This is for reading the 2004/ tables.
-# It may work for the OCR tables also, but the bouding boxes are less  precisely aligned.
+# It may work for the OCR tables also, but the bounding boxes are less  precisely aligned.
 
-library(CVRead)
-
-#file = "2004/T20WinWheatList04.pdf"
-#file = "2004/T28SacDeltaWheat04.pdf"
-
+# library(CVRead) # not needed anymore
 
 # For the scanned documents.
 library(Rtesseract)
 getScannedCols =
+    #
+    # This reads an image file and does OCR on it and then attempts to interpret the
+    # content as a table.
+    # See ocrTable.R's ocrTable() for a potentially better version.
+    # But needs integration.
+    #
 function(file, show = TRUE)
 {
     ts = tesseract(file)
@@ -28,8 +30,16 @@ function(file, show = TRUE)
 }
 
 
-# not ready to call it getTable() !
-getColumnData =  
+getColumnData =
+    # This is the top-level function for attempting to interpret a PDF file as a table.
+    # file - the name of the PDF file.
+    # doc - the XML version of the file, either via pdftohtml or pdfminer's pdf2txt.py
+    # show - whether to display the individual content and their bounding boxes in an R plot.
+    #      This is is not necessary for the computations, but for understanding how they are proceeding and
+    #       how the .
+    #
+    
+     # not ready to call it getTable() !    
 function(file, doc = convertPDF2XML(file),
            #doc = pdfMinerDoc(file, removeHeader = FALSE, removeZeroWidthLines = FALSE),
           show = TRUE,
@@ -602,8 +612,7 @@ fillMissingCells =
     #
 function(bbox, pageLines = numeric())
 {
-   bbox = orderBBox(bbox)
-#if(nrow(bbox) == 28) browser()
+    bbox = orderBBox(bbox)
     k = cut(bbox[, "bottom"], pageLines - 1)
     tt = table(k)
     if(any(tt == 0)) {
@@ -617,8 +626,6 @@ function(bbox, pageLines = numeric())
 #   lineHeight = bbox[, "top"] - bbox[, "bottom"]
 #   typicalLineDiff = median(-diff(bbox[, "bottom"]))*.5
 #   tmp = cut(bbox[, "bottom"], unique(c(0,  bbox[, "bottom"] - , Inf)))
-
-
 
    bbox
 }
