@@ -10,7 +10,10 @@ The data frames are available in [2004Tables.rds](2004Tables.rds).
 ### Note
 To use the code here, you need a modified version of the pdftohtml software that is available from
 the git repository (https://github.com/dsidvis/pdftohtml).  This differs from the regular pdftohtml
-in that it emits lines and rectangles which we use for detecting the headers and footers of many of the tables.
+in that it emits lines and rectangles which we use for detecting the headers and footers of many of
+the tables.
+
+You also currently need the CVRead package 
 
 We generate the data frames from the PDF documents with the following code
 ```r
@@ -37,13 +40,16 @@ The result for T01 currently messes up  the order of the text in the cells where
 subscripts. There are two of these and we need to assemble the text segments in order.
 
 
-To test our results
+To test our results, we get some information
 ```r
 k = sapply(z, function(x) class(x)[1])
 table(k)
 b = split(names(k), k)
 ```
 ```
+ data.frame RegularGrid 
+          7          49
+
 $data.frame
 [1] "2004/T01SiteChar04.pdf"     "2004/T02WinBarLst04.pdf"    "2004/T06RegBarList04.pdf"   "2004/T16SprBarLst04.pdf"    "2004/T20WinWheatList04.pdf"
 [6] "2004/T39WheatYield04.pdf"   "2004/T40SprWheatLst04.pdf" 
@@ -64,6 +70,26 @@ $RegularGrid
 [49] "2004/T56ImperialDurumNormVsRed04.pdf"
 ```
 
+The distribution of rows in the tables is
+```r
+table(sapply(z, nrow))
+```
+10 17 18 20 27 28 29 30 31 34 39 40 43 
+ 4  1  4  4  5  3 15  2  1  1  2 10  4 
+```
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+  10.00   27.00   29.00   29.25   39.25   43.00
+```
+The distribution of columns is
+```r
+table(sapply(z, ncol))
+```
+```
+ 5  6  7  8  9 10 11 12 13 14 16 19 20 27 
+11  1  8  4  1  5  7  6  4  3  2  1  1  2 
+```
+
+
 The difference between the two classes relates to the approach we ultimately used to convert
 the content to a data frame.
 * A RegularGrid means that we broke it down by line and counted the number of entries in each and
@@ -77,7 +103,7 @@ the content to a data frame.
     * how many entries are in a column,
     * how to deal with missing values.
 	
-  This is far more heuristic. Fortunately, there are only 7 in this category.
+  This is more heuristic, but "sensible". Fortunately, there are only 7 in this category.
 
 
 ## Notes
