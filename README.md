@@ -47,7 +47,7 @@ the content to a data frame.
   * inferring whether the column is left, right or center aligned,
   * how many entries are in a column,
   * how to deal with missing values.
-  This is far more heuristic. Fortunately, there are only 7 in this category.
+ This is far more heuristic. Fortunately, there are only 7 in this category.
 
 
 ## Notes
