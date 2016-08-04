@@ -1,7 +1,7 @@
 # This is for reading the 2004/ tables.
 # It may work for the OCR tables also, but the bounding boxes are less  precisely aligned.
 
-# library(CVRead) # not needed anymore
+library(CVRead) # not needed anymore
 
 # For the scanned documents.
 library(Rtesseract)
