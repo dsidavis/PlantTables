@@ -28,18 +28,24 @@ splitPDF =
     #
     # splitPDF("197098.pdf", pages = c(10, 12))
     #
+    # For now, we assume pages is a start and end. If it is longer,
+    # we can do this in chunks.
     #
 function(file, pages = integer(), rename = length(pages) > 0, numPerSplit = 1L, pdfBox.jar = getOption("PDFBoxJAR"))
 {
-   cmd = sprintf("java -cp %s org.apache.pdfbox.tools.PDFSplit -split %d %s %s",
+   if(length(pages) == 1)
+       pages = c(pages, pages)  # make the start and end page the same so PDFSplit doesn't do the remaining pages after the one we want.
+   
+   cmd = sprintf("java -cp '%s' org.apache.pdfbox.tools.PDFSplit -split %d %s '%s'",
                   mkJar(pdfBox.jar),
                   as.integer(numPerSplit), mkStartEnd(pages), file)
    system(cmd, intern = TRUE)
    ans = list.files(dirname(file), pattern = sprintf("%s-[0-9]+\\.pdf", gsub("\\.pdf", "", file)), full.names = TRUE)
+   
    if(rename) {
-      if(length(pages) == 1)
-          pages = rep(pages, 2)
+      pages = range(pages)
       i = seq(pages[1], pages[2])
+
       mapply(function(i, f) {
                to = gsub("-([0-9]+).pdf$", sprintf("-%d.pdf", i), f)          
                file.rename(f, to)
@@ -56,6 +62,10 @@ function(pages)
 {
    if(length(pages)) {
        pages = sort(pages)
+       if(length(pages) > 2) {
+         pages = range(pages)
+         warning("processing pages between ", pages[1], " and ", pages[2], " inclusive")
+       }
        if(length(pages) >= 2)
           startEnd = sprintf("-startPage %d -endPage %d", pages[1], pages[2])
        else
