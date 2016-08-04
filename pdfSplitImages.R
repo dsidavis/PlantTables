@@ -1,21 +1,76 @@
+# https://pdfbox.apache.org/1.8/commandline.html
+#
+# We use the java tools via the command line. In the future, we might
+# call the class methods directly via rJava and then be able to fetch
+# PDF content for a page or
+#
+# We might also do this by embedding pdftohtml and/or libxpdf directly into R
+# and be able to get access to the elements in a streaming manner.
+#
 splitPDFs =
+    #
+    # Split a collection (typically a directory) of PDF files into individual
+    # pages for each of the whole PDF files.
+    #
+    # This
+    #
 function(dir,  files = list.files(dir, pattern = "\\.pdf$"),
-         pdfBox.jar = "~/Downloads/pdfbox-app-2.0.2.jar")
+         pdfBox.jar = getOption("PDFBoxJAR"))
 {    
-   lapply(files, splitPDFs)
+   lapply(files, splitPDFs, pdfBox.jar = pdfBox.jar)
 }
 
 splitPDF =
     #
-    # returns the names of the newly created files.
+    # This splits a single multi-page PDF file into a separate file for each individual
+    # page or group of numPerSplit pages.
+    # Returns the names of the newly created files.
     #
-function(file, pdfBox.jar = "~/Downloads/pdfbox-app-2.0.2.jar")
-{    
-   cmd = sprintf("java -jar %s PDFSplit -split 1 %s", pdfBox.jar, file)
+    # splitPDF("197098.pdf", pages = c(10, 12))
+    #
+    #
+function(file, pages = integer(), rename = length(pages) > 0, numPerSplit = 1L, pdfBox.jar = getOption("PDFBoxJAR"))
+{
+   cmd = sprintf("java -cp %s org.apache.pdfbox.tools.PDFSplit -split %d %s %s",
+                  mkJar(pdfBox.jar),
+                  as.integer(numPerSplit), mkStartEnd(pages), file)
    system(cmd, intern = TRUE)
-   list.files(dirname(file), pattern = sprintf("%s-[0-9]+\\.pdf", gsub("\\.pdf", "", file)), full.names = TRUE)
+   ans = list.files(dirname(file), pattern = sprintf("%s-[0-9]+\\.pdf", gsub("\\.pdf", "", file)), full.names = TRUE)
+   if(rename) {
+      if(length(pages) == 1)
+          pages = rep(pages, 2)
+      i = seq(pages[1], pages[2])
+      mapply(function(i, f) {
+               to = gsub("-([0-9]+).pdf$", sprintf("-%d.pdf", i), f)          
+               file.rename(f, to)
+               to
+             },
+             i, ans)
+
+   } else
+       ans
 }
 
+mkStartEnd =
+function(pages)
+{
+   if(length(pages)) {
+       pages = sort(pages)
+       if(length(pages) >= 2)
+          startEnd = sprintf("-startPage %d -endPage %d", pages[1], pages[2])
+       else
+          startEnd = sprintf("-startPage %d", pages[1])
+   } else
+      startEnd = ""
+
+   startEnd
+}
+
+mkJar =
+function(pdfBox.jar = getOption("PDFBoxJAR"))
+{
+    paste(path.expand(pdfBox.jar), collapse = ":")
+}
 
 
 if(FALSE) {
@@ -39,17 +94,18 @@ pdfToImage =
     # There are different numbers of warnings for these which may tell us about glyphs such as ligatures, etc.
     #
     #
-function(file, prefix = gsub("\\.pdf$", "", file), imageType = "png",
-          pdfBox.jar = c("~/Downloads/pdfbox-app-2.0.2.jar", "~/Downloads/levigo-jbig2-imageio-1.6.4.jar"), force = FALSE)
+function(file, pages = integer(), prefix = gsub("\\.pdf$", "", file), imageType = "png",
+          pdfBox.jar = getOption("PDFBoxJAR"), force = FALSE)
 {
+    imageType = match.arg(imageType, c("png", "jpg"))
     
     to = gsub("pdf$", imageType, file)
     if(file.exists(to) && !force)
        return(to)
     
 #    f = list.files(dirname(file))
-    cmd = sprintf("java -cp %s org.apache.pdfbox.tools.PDFToImage -outputPrefix '%s' -imageType '%s' '%s'",
-                    paste(path.expand(pdfBox.jar), collapse = ":"), prefix, imageType, file)
+    cmd = sprintf("java -cp %s org.apache.pdfbox.tools.PDFToImage -outputPrefix '%s' -imageType '%s' %s '%s'",
+                    mkJar(pdfBox.jar), prefix, imageType, mkStartEnd(pages), file)
     print(cmd)
     system(cmd, intern = TRUE)
 #    id = setdiff(list.files(dirname(file)), f)
