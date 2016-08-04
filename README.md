@@ -8,13 +8,22 @@ Two cells in the first one have slightly incorrect text.
 The data frames are available in [2004Tables.rds](2004Tables.rds).
 
 ### Note
-To use the code here, you need a modified version of the pdftohtml software that is available from
-the git repository (https://github.com/dsidvis/pdftohtml).  This differs from the regular pdftohtml
-in that it emits lines and rectangles which we use for detecting the headers and footers of many of
-the tables.
+To use the code here, you need two pieces of software.
 
-You also currently need the CVRead package 
+* A modified version of the pdftohtml software that is available from
+  the git repository (https://github.com/dsidvis/pdftohtml).  This differs from the regular pdftohtml
+  in that it emits lines and rectangles which we use for detecting the headers and footers of many of
+  the tables.
 
+* You also currently need the [CVRead](https://github.com:dsidavis/CVRead) package. This
+  provides several functions for displaying the bounding boxes and also the classes for working
+  with pdfminer and pdftohtml documents.
+  One can install this directly with the devtools package
+  ```
+  devtools::install_github('dsidavis/CVRead')
+  ```
+
+## Generating the Content
 We generate the data frames from the PDF documents with the following code
 ```r
 source("pdfTables.R"); source("utils.R"); source("readPDF2HTML.R"); source("t01.R")
