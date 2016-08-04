@@ -126,36 +126,68 @@ function(file, doc = convertPDF2XML(file),
 }
 
 
-guessCells =
+bboxToDF =
 function(bb)
 {
-  bb = orderBBox(bb)
+    if(is.data.frame(bb))
+        return(bb)
+    
+    txt = rownames(bb)
+    bb = as.data.frame(bb)
+    rownames(bb) = NULL
+    bb$text = txt
+    bb
+}
 
-  txt = rownames(bb)
-  bb = as.data.frame(bb)
-  rownames(bb) = NULL
-  bb$text = txt
-
-
-   # if there are bottom values that are close to another box, move them.
-   # Have to be careful about this.
-#??? Handle more than a 1 unit difference.
-#browser()    
+fixSubscripts =
+function(bb)
+{
   dd = diff(c( bb[1, "bottom"], bb[, "bottom"]))
-  for(delta in c(-1, -2)) {
+  for(delta in c(-1, -2, -3)) {
       i = which (dd == delta)  # which(dd < 0 & dd > -3)
       w = bb[, "bottom"] %in% bb[i, "bottom"]
       bb[ w, "bottom"] = bb[w, "bottom"] - delta
       # Need to merge the boxes that are adjacent.
   }
-
-
   
-#  lines = by(bb, bb[, "bottom"], mergeHorizontalBoxes)
+  bb
+}
+
+guessCells =
+function(bb)
+{
+  bb = orderBBox(bb)
+  bb = bboxToDF(bb)
+
+   # if there are bottom values that are close to another box, move them.
+   # Have to be careful about this.
+  bb = fixSubscripts(bb)
+
+
   lines = split(bb, bb[, "bottom"])
   ncells = sapply(lines, nrow)
 
-  if(length(unique(ncells)) != 1) {
+  if(length(unique(ncells)) != 1  && is.null( lines <- tryCompactLongerRows(lines, ncells))) 
+      return(NULL) # failed 
+
+   # so now they all have the same number of columns/entries, so we can create a data frame.
+  ncells = sapply(lines, nrow)  
+  bbnew = do.call(rbind, lines)
+  bbnew$column = rep(1:ncells[1], length(lines)) # all ncell values are the same at this point.
+
+  cols  = split(bbnew, bbnew$column)
+}
+
+mostCommonNum =
+function(vals)
+{
+    tt = table(vals)
+    as.numeric(names(tt)[which.max(tt)])
+}
+
+tryCompactLongerRows =
+function(lines, ncells = sapply(lines, nrow))
+{
      # not all have the same number of cells.
      # let's see if we should collapse some of the boxes that are close together.
      # see merge... below.
@@ -164,8 +196,8 @@ function(bb)
       # But we have a chicken and egg problem in that we can identify
 
       # Compute the most common number of cells, and if all have at least that many, we'll try to repair.
-    tt = table(ncells)
-    ml = as.integer(names(tt)[which.max(tt)])
+
+    ml = mostCommonNum(ncells)
     if(!all(ncells >= ml))
        return(NULL)
 
@@ -173,22 +205,56 @@ function(bb)
     # First get the widths of the columns for the lines we think are correct, i.e. have ml columns.
     # This is for determining if we should allow combining boxes that are not overlapping but slightl
     # separate. This is all for T44.
-    colPos = do.call(rbind, lapply(lines[ ncells == ml ], function(x) as.numeric(t(getColPositions(x)))))
-    pos = apply(colPos[, seq(1, by = 2, length = ml)], 2, min)
-    
+
     i = ncells > ml
+    pos = getOkColPositions(lines[!i], ml)    
 
     lines[i] = lapply(lines[i], repairCells, pos)
     if(length(unique(ncells <- sapply(lines, nrow))) > 1) {
       return(NULL)  # failed to combine ...
     }
-  }
-  
-  bbnew = do.call(rbind, lines)
-  bbnew$column = rep(1:ncells[1], length(lines)) # all ncell values are the same at this point.
 
-  cols  = split(bbnew, bbnew$column)
+    lines
 }
+
+getOkColPositions =
+    # okLines is a list of bboxes - 1 per line
+    # and critically these are the lines where we know the number of columns
+    # So this gets the column starts and ends across all of these.
+function(okLines, ml = nrow(okLines[[1]]) )
+{
+    tmp = lapply(okLines, function(x) as.numeric(t(getColPositions(x))))
+    colPos = do.call(rbind, tmp)
+    ans = apply(colPos, 2, min)
+    i = seq(2, by = 2, length = ml)
+    ans[i] = apply(colPos[, i, drop = FALSE], 2, max)
+    fixPos(ans)
+}
+
+fixPos =
+  #  get the 
+function( pos)
+{
+#return(pos)
+  m = matrix(c(0, pos[- c(1, length(pos))], Inf),, 2, byrow = TRUE)
+  n = nrow(m)
+  v = (m[-n, 2] + m[-1,1])/2
+#  m[2:n, 1] = m[1:(n-1), 2] = v
+  m[-1, 1] = m[-n, 2] = v  
+  unique(as.numeric(m))
+}
+
+getOkColPositions1 =
+function(okLines, ml = nrow(okLines[[1]]) )
+{
+  lines = do.call(rbind, okLines)
+  lines$col = rep(1:ml, length(okLines))
+  ans = by(lines, lines$col, function(x) c(min(x[,1]), max(x[,3])))
+  unname(unlist(ans))
+}
+
+
+
 
 getColPositions =
     #
@@ -216,7 +282,10 @@ function(bb, colLocations)
        tmp = combineHBoxes(bb[j,])
        bb = rbind(bb[-j, ], tmp[, c("left", "bottom", "right", "top", "text")])
     } else {
-        tt = split(bb, cut(bb[, "left"], c(colLocations, Inf), include.lowest = TRUE, right = FALSE))        
+        if(is.na(match(Inf, pos)))
+           colLocations = c(colLocations, Inf)
+        
+        tt = split(bb, cut(bb[, "left"], colLocations, include.lowest = TRUE, right = FALSE))        
         i = sapply(tt, nrow) > 1
         if(any(i)) {
            tt[i] = lapply(tt[i], combineHBoxes, FALSE)
