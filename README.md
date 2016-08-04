@@ -74,12 +74,11 @@ The distribution of rows in the tables is
 ```r
 table(sapply(z, nrow))
 ```
-10 17 18 20 27 28 29 30 31 34 39 40 43 
- 4  1  4  4  5  3 15  2  1  1  2 10  4 
 ```
-   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
-  10.00   27.00   29.00   29.25   39.25   43.00
-```
+ 10 17 18 20 27 28 29 30 31 34 39 40 43 
+ 4  1  4  4  5  3 15  2  1  1  2 10  4
+ ```
+ 
 The distribution of columns is
 ```r
 table(sapply(z, ncol))
