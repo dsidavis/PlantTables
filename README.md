@@ -44,10 +44,11 @@ the content to a data frame.
 * A data.frame indicates that we used a more heuristic approach than above. Instead, we had to
   attempt to find the locations that divided columns by determining where a column started and ended
   and where the adjacent column started and ended.  This  involves
-  * inferring whether the column is left, right or center aligned,
-  * how many entries are in a column,
-  * how to deal with missing values.
- This is far more heuristic. Fortunately, there are only 7 in this category.
+    * inferring whether the column is left, right or center aligned,
+    * how many entries are in a column,
+    * how to deal with missing values.
+	
+  This is far more heuristic. Fortunately, there are only 7 in this category.
 
 
 ## Notes
