@@ -1,3 +1,4 @@
+
 If there are - in the cells, then that column is centered for this 2004/ data.
  tt = readLines("Notes"); tt = grep("^[0-9]|T", tt, value = TRUE); n =sapply(strsplit(tt, " "), `[`, 1); n = n[!is.na(n) & n != ""]; n = as.integer(gsub("^T", "", n))
 
