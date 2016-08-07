@@ -1,6 +1,6 @@
 Scanned
 
-missing values
+deal with tables that have missing values
 
 recognize sites across tables to correct scanning errors
   For example, in the 6 images KANOTA is spelled  KANUTA  in one of the tables, but there are 3 KANOTA.
@@ -9,8 +9,15 @@ recognize sites across tables to correct scanning errors
 train tesseract on some of these images and see how it improves things.
 
 install imagemagick and ghostscript and then convert the pages of the pdf to png that way.
+  imagemagick (on Linux (poisson))  doesn't do as good a job as OSX's preview
+  Instead, use OSX' Automator to transform them
+
+  Creating duplicates.
+
+    See PNG_Images_new  TIFF_images
 
 
+   1997-9-imagemagick.png
 
 
 Change findCols to use as.integer(pos/scale) to use the rounding down.

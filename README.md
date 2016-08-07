@@ -160,11 +160,32 @@ We use [tesseract](https://github.com/tesseract-ocr) to do the OCR, and specific
 to it from R.
 
 ## Getting the Documents
-We need an image of each page to pass to tesseract.
-So first we need to convert the multi-page PDF documents into separate pages.
-We use [pdfbox](https://pdfbox.apache.org/) for this and the R
-function `splitPDFs()` and `splitPDF()` in  [pdfSplitImages.R](pdfSplitImages.R) do this.
-After extracting each page, we convert the single-page PDF to a PNG file, again using pdfbox.
+We need an image of each page in a PDF to pass to tesseract.
+
+When exploring the tables initially, we used OSX's Preview application to manually convert
+several individual pages in PDF documents to PNG.  It turns out  that the quality of these
+is superior to the "default" generated with ImageMagick's convert or PdfBox's PDFToImage code.
+(We did use various command line arguments for convert.  PDFToImage doesn't provide command line
+options for controlling the quality.)
+
+Of course, we don't want to manually select, export and specify the name of the target file for each
+page. But we do want to use Preview in the absence of finding a way to produce as high quality.
+Accordingly, we use OSX's Automator program to create a simple application that will do this
+programmatically.   The resulting application is in ConvertPDFToPNG.app.
+It currently contains the names of the original PDFs from 1981 to  1997.
+Open the Automator application, select an existing automator application and open this
+ConvertPDFToPNG.app file/directory.  In the top right corner, click on the run (>) button
+and let it work. It will create 890 files.
+
+There were issues with it creating duplicates of each page. That appears to not happen now.
+
+Originally, we used [pdfbox](https://pdfbox.apache.org/) for this.
+This works fine for splitting the PDF into multiple single-page PDF files.
+Unfortunately, its conversion of an individual PDF page to PNG results in significant
+loss in quality and compromises the OCR.
+The functions `splitPDFs()` and `splitPDF()` in  [pdfSplitImages.R](pdfSplitImages.R) separate a
+PDF file into single-page PDFs.
+After extracting each page, we can convert the single-page PDF to a PNG file, again using pdfbox.
 The R function `pdfToImage()` does this.
 
 
