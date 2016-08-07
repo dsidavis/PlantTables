@@ -4,6 +4,10 @@ library(Rtesseract)
 # The second is the station name often containing multiple "words". Left aligned
 # The remaining columns are numbers and are "always" right aligned, often left aligned also, i.e. all the same width.
 #    Not true for 1990 p45, p26
+
+#
+# Counter example  1990 p30 (table 24)
+#
 #
 
 
@@ -18,6 +22,7 @@ library(Rtesseract)
 #  Remove text close to the second top line but under it that is
 #   "far" from the next line down.  See Table 39 1990 p45.
 #
+# Fix the mis-recognized (
 # Discard the lines we know we don't want.
 # Discard the ranks
 #
@@ -26,13 +31,23 @@ library(Rtesseract)
 #
 #
 
+
+getTable =
+function(file, bbox = scanElements(file, show), show = FALSE)
+{
+  bb = scannedBBox(, bbox)
+  repairCols(getRows(bb))
+}
+
 scanElements =
-function(file)
+function(file, show = FALSE)
 {
     ts = tesseract(file, "psm_auto") # get the lines in the bounding boxes.
     Recognize(ts)
     bb = BoundingBoxes(ts)
     colnames(bb) = c("left", "bottom", "right", "top")
+    if(show)
+       plot(ts, bbox = bb)
     bb
 }
 
@@ -41,8 +56,20 @@ function(file, bbox = scanElements(file))
 {
 
       # discard the black box from the scanning where the page did not cover the entire scanner region
-      # The big black box on the page from the scan.  Could be on the side. See 1996 p28    
-    bbox = bbox[ bbox[, 1] != 0, ]
+      # The big black box on the page from the scan.  Could be on the side. See 1996 p28
+
+      # Clean up the little boxes that are scanning "smudges"
+      # Could also just use the margins.  
+    if(TRUE) { # any(bbox[,1] < 2 & bbox[, 2] < 2)) {
+        # horizontal so the page number should be to the left of the table and we need to remove it.
+        # Probably the ones identified by  sort(bbox[,1])[2:4]
+       i = grep("TABLE", rownames(bbox))
+       tt = bbox[i, ]
+       bbox = bbox[ bbox[, 1] > tt[1] - 100 & bbox[, 2] > tt[2] - 10, ]
+    }
+
+     
+    bbox = bbox[ bbox[, 1] != 0 & bbox[, 2] > 15, ]  # the bottom > 15 is for e.g. 1990 p41 - line at the top. may already be gone now since we added the TABLE check.
 
     lines = findLines(bbox)
     
@@ -73,7 +100,6 @@ function(bbox, lines)
 discardElements =
 function(bbox, lines = findLines(bbox))
 {
-browser()    
     # everything between the two lines at the top and bottom of the body of the table.
   ll = getFullTableLines(bbox, lines)
   ll = ll[ order(ll[, "top"]), ]
@@ -83,16 +109,35 @@ browser()
 
    # Find the elements that are under the second line but very close to it, e.g., 1990 p45 &  p 31 - 33
   h = mean(bbox[, "top"] - bbox[, "bottom"])
+#browser()  
   d = (bbox[, "bottom"] - ll[2, "top"])
-  i = d > 0 & d < .7*h
+  i = d < 1.*h  # d > 0 ???
   bbox = bbox[ !i, ]
 
-  i = which(rownames(bbox) == "MEAN")
+  i = which(rownames(bbox) %in% c("MEAN", "Mean" ))
   if(length(i))
       bbox = bbox[ bbox[, "top"] <  bbox[i, "top"] - 10, ]
 
   if(length(i <- grep("entry", rownames(bbox), ignore.case = TRUE) ))
      bbox = bbox[ bbox[, "top"] > bbox[i , "top"] + 10  , ]
+
+
+  # Find the elements that were mistakenly not (. Currently (from 1990 p45) these seem
+  # to be one character elements  1 i I f
+  # These are all rankings that have a single digit and so the ( is separated from the rest
+  # and OCR gets it wrong.
+  # We'll use the heuristic of looking at the other elements in that column and see if the
+  # majority of the text of these start with "("
+  #XXX Training tesseract on these characters may get rid of these issues.
+
+  i = which(nchar(rownames(bbox)) == 1 & rownames(bbox) != "(")
+  if(length(i)) {
+     w = sapply(bbox[i, "left"], othersInColStartWithParen, bbox[-i, ], mean(bbox[i, "right"] - bbox[i, "left"]))
+
+     if(any(w))
+        bbox = bbox[ - i[w], ]
+  }
+
 
             # Get rid of the rank values
   i = grepl("^[({]$|^\\(?[0-9]+[\\)}]$", rownames(bbox))
@@ -107,6 +152,13 @@ browser()
   bboxToDF(bbox)
 }
 
+othersInColStartWithParen =
+function(x, bbox, charWidth = 20)
+{
+   ngbr = abs(bbox[, "left"] - x) < charWidth
+   txt = rownames(bbox[ngbr, ])
+   length(grep("^\\(", txt)) > .5 * length(txt)
+}
 
 
 getRowSeps =
@@ -121,5 +173,46 @@ getRows =
 function(bbox, sep = getRowSeps(bbox))
 {
    rowId = cut(bbox[, "bottom"], c(sep, Inf))
-   split(bbox, rowId)
+   unname(split(bbox, rowId))
 }
+
+
+# Missing values will cause problems.
+repairCols =
+function(ragRows, ncols = mostCommonNum(sapply(ragRows, nrow)))
+{
+
+   ok = sapply(ragRows, nrow) == ncols
+   cols = getColPositions(do.call(rbind, ragRows[ok]))
+   ragRows[!ok]  = lapply(ragRows[!ok], fixRow, cols)
+
+   if(length(unique(sapply(ragRows, nrow))) == 1)
+      rowsToTable(ragRows)  # unname(lapply(ragRows, `[[`, "text"))) # do.call(rbind, lapply(ragRows, `[[`, "text"))
+   else
+      ragRows
+}
+
+rowsToTable =
+function(rows)
+{
+   m = do.call(rbind, lapply(rows, `[[`, "text"))
+
+   cols = lapply(seq(ncol(m)), function(i)  convertCol(m[,i]))
+   ans = as.data.frame(cols, stringsAsFactors = FALSE)
+   names(ans) = sprintf("V%d", seq(ncol(ans)))
+   ans
+}
+
+fixRow =
+function(x, colPos)
+{
+
+   w = x[2:3, ]
+   x[2, "left"] = min(w[, "left"])
+   x[2, "right"] = max(w[, "right"])
+   x[2, "top"] = min(w[, "top"])
+   x[2, "bottom"] = max(w[, "bottom"])
+   x[2, "text"] = paste(w$text, collapse = " ")
+   x[-3,]
+}
+
