@@ -79,8 +79,7 @@ function(file, bbox = scanElements(file))
     bboxAccurate = cleanBBox(bboxAccurate, FALSE)
     
 #    discardElements(bbox[ - lines, ],  bbox[lines, ])
-    discardElements(bboxAccurate,  bbox[lines, ])        
-
+    discardElements(bboxAccurate,  bbox[lines, ], getFullTableLines(bbox[-lines, ], bbox[lines,]))
 }
 
 cleanBBox =
@@ -138,7 +137,7 @@ getFullTableLines =
     #
 function(bbox, lines)
 {
-   w = lines[,3] - lines[,1]
+#   w = lines[,3] - lines[,1]
    
    w = lines[,1] - min(bbox[, 1]) < 10 & (lines[,3] - max(bbox[, 3]) > - 10)
    if(sum(w) < 3) {
@@ -159,10 +158,10 @@ discardElements =
     #
     #  discard  elements that are not in the content/body of the table.
     #
-function(bbox, lines = findLines(bbox))
+function(bbox, lines = findLines(bbox), ll = getFullTableLines(bbox, lines))
 {
-    # everything between the two lines at the top and bottom of the body of the table.
-  ll = getFullTableLines(bbox, lines)
+    # keep everything between the two lines at the top and bottom of the body of the table.
+
   ll = ll[ order(ll[, "top"]), ]
 
   i = bbox[, "top"] > ll[2, "bottom"] & bbox[, "top"] < ll[3, "bottom"] 
@@ -180,6 +179,8 @@ function(bbox, lines = findLines(bbox))
   if(length(i))
       bbox = bbox[ bbox[, "top"] <  bbox[i, "top"] - 10, ]
 
+     # looking for entry and getting the things above it.
+     # This should already be done via the horizontal lines.
   if(length(i <- grep("entry", rownames(bbox), ignore.case = TRUE) ))
      bbox = bbox[ bbox[, "top"] > bbox[i , "top"] + 10  , ]
 
@@ -192,7 +193,7 @@ function(bbox, lines = findLines(bbox))
   # majority of the text of these start with "("
   #XXX Training tesseract on these characters may get rid of these issues.
 
-  i = which(nchar(rownames(bbox)) == 1 & rownames(bbox) != "(")
+  i = which( nchar(rownames(bbox)) == 1 & rownames(bbox) != "(" )
   if(length(i)) {
      w = sapply(bbox[i, "left"], othersInColStartWithParen, bbox[-i, ], mean(bbox[i, "right"] - bbox[i, "left"]))
 
@@ -200,9 +201,8 @@ function(bbox, lines = findLines(bbox))
         bbox = bbox[ - i[w], ]
   }
 
-
             # Get rid of the rank values
-  i = grepl("^[({]$|^\\(?[0-9]+[\\)}1I]$", rownames(bbox))  # The 1I here is for mismatching a )
+  i = !grepl("^[0-9]+$", rownames(bbox)) & grepl("^[({]$|^\\(?[0-9]+[\\)}1I]$", rownames(bbox))  # The 1I here is for mismatching a )
   bbox = bbox[!i, ]
 
     # And if  tesseract mistook a digit for a
@@ -381,9 +381,7 @@ function(bbox, nrows)
    tmp = do.call(rbind, by(bbox, bbox$row, function(x) data.frame(row = x$row[1], text = paste(x$text, collapse = " "))))
    ans[ tmp$row] = as.character(tmp$text)
 
-   ans = fixParens(ans)
-   
-   ans
+   fixParens(ans)
 }
 
 fixParens =
