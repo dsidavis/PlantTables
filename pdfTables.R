@@ -55,10 +55,17 @@ function(file, doc = convertPDF2XML(file),
        Open(file)
     
     if(is(doc, "PDFMinerDoc")) 
-      bb = getBBox(p, addNames = TRUE)
+       bb = getBBox(doc[[1]], addNames = TRUE)
     else 
-      bb = readPDF2XML(doc = doc)
+       bb = readPDF2XML(doc = doc[[1]])
 
+    getTableFromBBox(bb, doc[[1]], show, footerRX, ignoreLabels, ...)
+}
+
+getTableFromBBox =
+function(bbox, page, show = TRUE, footerRX = "^(MEAN|Rating scale|Analysis provided by|Numbers? in parentheses|SOURCE:)",
+          ignoreLabels =  "\\( ?[0-9]+\\)", ...)
+{    
       # Get rid of the cell that starts with "TABLE <number>"
     bb = bb[!grepl("^[[:space:]]*TABLE [0-9]{1,}", rownames(bb)), ]
 
@@ -75,11 +82,10 @@ function(file, doc = convertPDF2XML(file),
         bb = bb[ bb[,2] > bb[i[1], 2] + 2, ]
 
       # First page since each PDF has only one page.
-    p = doc[[1]]
-    lines = getLines(p)
+    lines = getLines(page)
 
       # Find the body of the table by looking for wide lines
-    bodyY = findBody(bb, doc[[1]], lines = lines)
+    bodyY = findBody(bb, page, lines = lines)
     if(length(bodyY) == 2)
        bb = bb[ bb[, "bottom"] < bodyY[1] &  bb[, "bottom"] > bodyY[2], ]
     else if(is.matrix(bodyY) && nrow(bodyY) > 3) {
@@ -120,7 +126,7 @@ function(file, doc = convertPDF2XML(file),
 #    bb[i, "right"] = bb[i, "right"] - 10 
     
     if(show)
-       showBoxes(p, bb, str.cex = .8)
+       showBoxes(page, bb, str.cex = .8)
 
        # Here we go for the idea case that all rows have the same number of cells
        # and that we can then figure out the entire table based on each column's left, right or centered alignment.
@@ -358,13 +364,13 @@ findBody =
     #
     # Find lines that span across the page that may identify the header and footer.
     #
-function(bbox, page, threshold = .75, linesBB = getLines(page))
+function(bbox, page = NULL, threshold = .75, linesBB = getLines(page))
 {
 
 # T14 file has two line segments at the bottom of the table that combined span the table
 # but they are two separate segments that don't quite connect.
     
-  page.dims = as.numeric(xmlAttrs(page)[c("height", "width")])
+#  page.dims = as.numeric(xmlAttrs(page)[c("height", "width")])
 
   w = linesBB[, "right"] - linesBB[, "left"]
 #  isAcrossPage = w > threshold*page.dims[2]  # names are discarded in the coercion.
@@ -385,7 +391,7 @@ function(bbox, page, threshold = .75, linesBB = getLines(page))
         # Compute proortion of cells above the second line and below the second line
      return(c(min(ll[, "bottom"]), 0))
   } else {
-     warning("take a look in", docName(page))
+     warning("take a look in", if(!is.null(page)) docName(page) else "??")
      return(ll)
   }
 }
@@ -540,16 +546,20 @@ function(d, dropRanks = TRUE)
         d = d[!isRank]
     }
     
-    d = lapply(d, function(x) {
-                    x[ XML:::trim(x) == "-" ] = NA
-                    type.convert(x, as.is = TRUE)
-                  })
+    d = lapply(d, convertCol)
     
     len = sapply(d, length)
     if(all(len == len[1])) 
        d = as.data.frame(d, stringsAsFactors = FALSE)
 
     d
+}
+
+convertCol =
+function(x)
+{
+    x[ XML:::trim(x) == "-" ] = NA
+    type.convert(x, as.is = TRUE)
 }
 
 

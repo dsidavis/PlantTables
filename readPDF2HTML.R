@@ -57,10 +57,17 @@ function(file, pdftohtml = getOption("PDFTOHTML", Sys.getenv("PDFTOHTML", 'pdfto
 
     out = system(cmd, intern = TRUE)
     
-    doc = xmlParse(out, asText = TRUE)
+    doc = xmlParsePDFTOTHML(out, asText = TRUE)
     docName(doc) = file
-    class(doc) = c("PDFToHTMLDoc", "ConvertedPDFDoc", class(doc))
     
+    doc
+}
+
+xmlParsePDFTOTHML =
+function(file, ...)
+{
+    doc = xmlParse(file, ...)
+    class(doc) = c("PDFToHTMLDoc", "ConvertedPDFDoc", class(doc))
     doc
 }
 

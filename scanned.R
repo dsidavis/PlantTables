@@ -63,9 +63,20 @@ function(file, bbox = scanElements(file))
     if(TRUE) { # any(bbox[,1] < 2 & bbox[, 2] < 2)) {
         # horizontal so the page number should be to the left of the table and we need to remove it.
         # Probably the ones identified by  sort(bbox[,1])[2:4]
-       i = grep("TABLE", rownames(bbox))
-       tt = bbox[i, ]
-       bbox = bbox[ bbox[, 1] > tt[1] - 100 & bbox[, 2] > tt[2] - 10, ]
+       i = grep("TABLE", rownames(bbox), ignore.case = TRUE)
+       if(length(i)) {
+           tt = bbox[i, ]
+           bbox = bbox[ bbox[, 1] > tt[1] - 100 & bbox[, 2] > tt[2] - 10, ]
+       } else {
+           o = order(bbox[,1])
+           left = bbox[o[2:10],1]
+           d = diff(left[-(2:4)])
+           if(any(d > 400) & any( i <- rownames(bbox[o[2:10], ]) == " ")) {
+              pos =  min(bbox[ o[2:10], 1][i] ) - 100
+              bbox = bbox[  bbox[,1] > pos, ]
+           }
+           warning("Didn't find the Table title! This could lead to problems")
+       }
     }
 
      
@@ -98,6 +109,10 @@ function(bbox, lines)
        width = mean(lines[w,3] - lines[w, 1])
        w = w | (lines[,3] - lines[,1]) > .7*width
    }
+
+   if(!any(w))
+      warning("couldn't find any lines across the table. Problems are very likely.  Did we discard elements to the left of the table? Did we find the word Table at the top of the document?")
+   
    lines[w, ]
 #  lines[  lines[,1] - min(bbox[,1])
 }
@@ -204,11 +219,12 @@ function(ragRows, ncols = NA)
    ok = sapply(ragRows, nrow) == ncols
    cols = getColPositions(do.call(rbind, ragRows[ok]))
    ragRows[!ok]  = lapply(ragRows[!ok], fixRow, cols, ncols)
-
+    
+#browser()
    if(length(unique(sapply(ragRows, nrow))) == 1)
       rowsToTable(ragRows)  # unname(lapply(ragRows, `[[`, "text"))) # do.call(rbind, lapply(ragRows, `[[`, "text"))
    else {
-      cat("leaving as list\n")
+      cat("leaving as list. Expecting", ncols, "columns\n")
       print(sapply(ragRows, nrow))
       ragRows
    }
@@ -228,6 +244,10 @@ function(rows, ncols)
 fixRow =
 function(x, colPos, ncols)
 {
+   if(nrow(x) < ncols) 
+      return(x)
+
+       
    extra = nrow(x) - ncols
 
    i = seq(2, 2+ extra)
