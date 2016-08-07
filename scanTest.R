@@ -1,6 +1,18 @@
+"PNG/1982-128 218.png"  - boxes are wrong.  See 11.4 in first row.  It is 2 boxes 11 4 and the . disappears!
+     If we change the Page Segment Mode back to the default, we get 11.4, etc.
+     So it looks like we need to calls for OCR to get the lines and then the proper boxes.
+
+     note we get the same results with TIFF or PNG.
+
 "PNG/1996-254 130.png" - 1119 in first column is separated into 1 1 19 and the latter two are going into the second column
 
-[1] "1990/1990-40.png"
+1990/1990-40.png
+
+
+
+PNG/1982-128 218.png
+
+PNG/1983-144 217.png - combines two columns together (7 & 8) that should be separate - Right alignment, but also -- which are centered. But other clumns not affected by that.
 
 
 

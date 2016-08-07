@@ -38,7 +38,7 @@ getTable =
     #
 function(file, ncols = NA, bbox = scanElements(file, show), show = FALSE, ...)
 {
-  bb = scannedBBox(, bbox)
+  bb = scannedBBox(file, bbox)
   rrows = getRows(bb)
   ans = repairCols(rrows, ncols)
   if(!is.data.frame(ans))
@@ -51,9 +51,10 @@ scanElements =
     #
     #  does the basic OCR to get 
     #
-function(file, show = FALSE)
+function(file, show = FALSE, segMode = "psm_auto")
 {
-    ts = tesseract(file, "psm_auto") # get the lines in the bounding boxes.
+message("scanElements for ", file, " ", segMode)
+    ts = tesseract(file, segMode) # psm_auto gets us the lines in the bounding boxes.
     Recognize(ts)
     bb = BoundingBoxes(ts)
     colnames(bb) = c("left", "bottom", "right", "top")
@@ -69,6 +70,21 @@ scannedBBox =
     #  of the table's body.  Returns a data frame of the relevant elements for the table's content.
     #
 function(file, bbox = scanElements(file))
+{
+    bbox = cleanBBox(bbox, TRUE)
+     
+    lines = findLines(bbox)
+
+    bboxAccurate = scanElements(file, segMode = "psm_single_block")
+    bboxAccurate = cleanBBox(bboxAccurate, FALSE)
+    
+#    discardElements(bbox[ - lines, ],  bbox[lines, ])
+    discardElements(bboxAccurate,  bbox[lines, ])        
+
+}
+
+cleanBBox =
+function(bbox, hasLines = TRUE)
 {
 
       # discard the black box from the scanning where the page did not cover the entire scanner region
@@ -91,16 +107,14 @@ function(file, bbox = scanElements(file))
               pos =  min(bbox[ o[2:10], 1][i] ) - 100
               bbox = bbox[  bbox[,1] > pos, ]
            }
-           warning("Didn't find the Table title! This could lead to problems")
+           if(hasLines)
+              warning("Didn't find the Table title! This could lead to problems")
        }
     }
 
-     
     bbox = bbox[ bbox[, 1] != 0 & bbox[, 2] > 15, ]  # the bottom > 15 is for e.g. 1990 p41 - line at the top. may already be gone now since we added the TABLE check.
-
-    lines = findLines(bbox)
     
-    discardElements(bbox[ - lines, ],  bbox[lines, ])
+    bbox
 }
 
 
@@ -313,8 +327,9 @@ function(bbox, nrows, ncols, charWidth = getCharWidth(bb),
   x = bb[which(w), col]
   
   nn = sapply(x, function(p) sum( abs(bb[, col] - p) < 1*charWidth))
- 
-  x[ nn > nrows * minPctRowCells ] - charWidth
+
+  off = if(col == "left") - charWidth else charWidth
+  x[ nn > nrows * minPctRowCells ] + off
 }
 
 doit =
@@ -329,6 +344,8 @@ function(ragRows, nrows, ncols, charWidth = NA, ...)
 
   # The second and third columns are very special. This is where the parts of the station names
   # get assigned into the third column. So we will examine these two and see if we need to merge them again.
+  # Probably also want to count the number of rows in col 3 that don't have a value corresponding to the
+  # one word/single elements in col 2.
    k23 = rbind(tmp[[2]], tmp[[3]])
    if(is.na(charWidth)) charWidth = getCharWidth(bb)
    d = by(k23, k23$rowNum, closeTogether, charWidth)
@@ -337,8 +354,7 @@ function(ragRows, nrows, ncols, charWidth = NA, ...)
       tmp = tmp[-3]
    }
 
- 
-   toTable(lapply(tmp, fixColumn, nrows))
+   toTable(lapply(tmp[sapply(tmp, nrow) > 0], fixColumn, nrows))
 }
 
 
