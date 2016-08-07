@@ -33,13 +33,24 @@ library(Rtesseract)
 
 
 getTable =
-function(file, ncols = NA, bbox = scanElements(file, show), show = FALSE)
+    #
+    # The high level function for reading a table from a file.
+    #
+function(file, ncols = NA, bbox = scanElements(file, show), show = FALSE, ...)
 {
   bb = scannedBBox(, bbox)
-  repairCols(getRows(bb), ncols)
+  rrows = getRows(bb)
+  ans = repairCols(rrows, ncols)
+  if(!is.data.frame(ans))
+     doit(rrows, length(rrows), ncols, ...)
+  else
+     ans
 }
 
 scanElements =
+    #
+    #  does the basic OCR to get 
+    #
 function(file, show = FALSE)
 {
     ts = tesseract(file, "psm_auto") # get the lines in the bounding boxes.
@@ -52,6 +63,11 @@ function(file, show = FALSE)
 }
 
 scannedBBox =
+    #
+    #  clean up the raw bounding box by removing the black rectangle from the scanning
+    #  the page number, find the horizontal lines spanning the table and get the content
+    #  of the table's body.  Returns a data frame of the relevant elements for the table's content.
+    #
 function(file, bbox = scanElements(file))
 {
 
@@ -89,7 +105,11 @@ function(file, bbox = scanElements(file))
 
 
 findLines =
-    # don't use getLines() as the name as we use that in pdfTables.R
+    # don't use the name getLines() as we use that in pdfTables.R
+    #
+    # This finds indices of the horizontal lines in the table.
+    # This includes any lines in the body, header, underlines of words and phrases.
+    #
 function(bbox)
 {
    w = bbox[,3] - bbox[,1]
@@ -99,6 +119,9 @@ function(bbox)
 
 
 getFullTableLines =
+    #
+    #  This gets the lines that span the entire table
+    #
 function(bbox, lines)
 {
    w = lines[,3] - lines[,1]
@@ -119,6 +142,9 @@ function(bbox, lines)
 
 
 discardElements =
+    #
+    #  discard  elements that are not in the content/body of the table.
+    #
 function(bbox, lines = findLines(bbox))
 {
     # everything between the two lines at the top and bottom of the body of the table.
@@ -162,13 +188,13 @@ function(bbox, lines = findLines(bbox))
 
 
             # Get rid of the rank values
-  i = grepl("^[({]$|^\\(?[0-9]+[\\)}]$", rownames(bbox))
+  i = grepl("^[({]$|^\\(?[0-9]+[\\)}1I]$", rownames(bbox))  # The 1I here is for mismatching a )
   bbox = bbox[!i, ]
 
     # And if  tesseract mistook a digit for a
     # This could discard elements in the header that are properly ended by a parenthesis.
     # e.g. Table 39
-  i = grepl("\\)$", rownames(bbox))
+  i = grepl("\\)$", rownames(bbox)) & nchar(rownames(bbox)) < 5
   bbox = bbox[!i, ]
 
 
@@ -185,6 +211,9 @@ function(bbox, lines = findLines(bbox))
 }
 
 othersInColStartWithParen =
+    #
+    # Find elements that are probably mal-recognized  ( by seeing if others in the same "column" mostly start with (
+    #
 function(x, bbox, charWidth = 20)
 {
    ngbr = abs(bbox[, "left"] - x) < charWidth
@@ -194,6 +223,9 @@ function(x, bbox, charWidth = 20)
 
 
 getRowSeps =
+    #
+    # Find the locations that appear to separate the rows.
+    #
 function(bbox, threshold, height = mean(bbox[, 4] - bbox[, 2]) *.5, col = "bottom")
 {
     u = sort(unique(bbox[, col]))
@@ -202,6 +234,9 @@ function(bbox, threshold, height = mean(bbox[, 4] - bbox[, 2]) *.5, col = "botto
 }
 
 getRows =
+    #
+    #  split the elements into rows
+    #
 function(bbox, sep = getRowSeps(bbox))
 {
    rowId = cut(bbox[, "bottom"], c(sep, Inf))
@@ -211,6 +246,10 @@ function(bbox, sep = getRowSeps(bbox))
 
 # Missing values will cause problems.
 repairCols =
+    #
+    #  This is a simple minded version that just focuses on column 2 as the problematic one.
+    #
+    #
 function(ragRows, ncols = NA)
 {
     if(is.na(ncols))
@@ -260,3 +299,89 @@ function(x, colPos, ncols)
    x[- i[-1],]
 }
 
+getCharWidth =
+function(bb)
+   median(  (bb[,3] - bb[,1])/nchar(bb$text)  )    
+
+discoverCols =
+function(bbox, nrows, ncols, charWidth = getCharWidth(bb),
+         col = "left", minPctRowCells = .3)  # Can also do with right (and middle if in bbox)
+{
+  bb = orderBBox(bbox, col, FALSE)
+  d = diff(c(0, bb[, col]))
+  w = d > 2*charWidth
+  x = bb[which(w), col]
+  
+  nn = sapply(x, function(p) sum( abs(bb[, col] - p) < 1*charWidth))
+ 
+  x[ nn > nrows * minPctRowCells ] - charWidth
+}
+
+doit =
+function(ragRows, nrows, ncols, charWidth = NA, ...)
+{
+ message("in doit")
+   bb = do.call(rbind, ragRows)
+   bb$rowNum = rep(seq(along = ragRows), sapply(ragRows, nrow))
+   pos = discoverCols(bb, nrows, ...)
+   tmp = split(bb, cut(bb[, 1], c(pos, Inf)))
+
+
+  # The second and third columns are very special. This is where the parts of the station names
+  # get assigned into the third column. So we will examine these two and see if we need to merge them again.
+   k23 = rbind(tmp[[2]], tmp[[3]])
+   if(is.na(charWidth)) charWidth = getCharWidth(bb)
+   d = by(k23, k23$rowNum, closeTogether, charWidth)
+   if(all(d < 2*charWidth)) {
+      tmp[[2]] = k23
+      tmp = tmp[-3]
+   }
+
+ 
+   toTable(lapply(tmp, fixColumn, nrows))
+}
+
+
+closeTogether =
+function(lines, charWidth)
+{
+  if(nrow(lines) == 1)
+      return(0)
+
+  i = 2:nrow(lines)
+  max(lines[i, "left"] - lines[i-1, "right"])
+}
+
+
+
+fixColumn =
+    #
+    # combines elements in the same row and column into a single entry
+    # Handles values not present for a row.
+    #
+function(bbox, nrows)
+{
+   ans = character(nrows)
+   tmp = do.call(rbind, by(bbox, bbox$row, function(x) data.frame(row = x$row[1], text = paste(x$text, collapse = " "))))
+   ans[ tmp$row] = as.character(tmp$text)
+
+   ans = fixParens(ans)
+   
+   ans
+}
+
+fixParens =
+function(text)
+{
+   chars = unlist(strsplit(a[[3]], ""))
+   if(all(chars %in% c(" ", 0:9, "(", "{", ")")))
+      gsub(" ?[\\({].*", "", text)
+   else
+      text
+}
+#
+foo = 
+function(vals, pos)
+{
+
+}
