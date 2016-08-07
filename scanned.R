@@ -33,10 +33,10 @@ library(Rtesseract)
 
 
 getTable =
-function(file, bbox = scanElements(file, show), show = FALSE)
+function(file, ncols = NA, bbox = scanElements(file, show), show = FALSE)
 {
   bb = scannedBBox(, bbox)
-  repairCols(getRows(bb))
+  repairCols(getRows(bb), ncols)
 }
 
 scanElements =
@@ -91,7 +91,13 @@ getFullTableLines =
 function(bbox, lines)
 {
    w = lines[,3] - lines[,1]
-   w = lines[,1] - min(bbox[, 1]) < 10 &  lines[,3] - max(bbox[, 3]) > - 10
+   
+   w = lines[,1] - min(bbox[, 1]) < 10 & (lines[,3] - max(bbox[, 3]) > - 10)
+   if(sum(w) < 3) {
+       # see if we have a partial line.
+       width = mean(lines[w,3] - lines[w, 1])
+       w = w | (lines[,3] - lines[,1]) > .7*width
+   }
    lines[w, ]
 #  lines[  lines[,1] - min(bbox[,1])
 }
@@ -109,11 +115,12 @@ function(bbox, lines = findLines(bbox))
 
    # Find the elements that are under the second line but very close to it, e.g., 1990 p45 &  p 31 - 33
   h = mean(bbox[, "top"] - bbox[, "bottom"])
-#browser()  
+
   d = (bbox[, "bottom"] - ll[2, "top"])
   i = d < 1.*h  # d > 0 ???
   bbox = bbox[ !i, ]
 
+ 
   i = which(rownames(bbox) %in% c("MEAN", "Mean" ))
   if(length(i))
       bbox = bbox[ bbox[, "top"] <  bbox[i, "top"] - 10, ]
@@ -149,6 +156,16 @@ function(bbox, lines = findLines(bbox))
   i = grepl("\\)$", rownames(bbox))
   bbox = bbox[!i, ]
 
+
+   # Too small
+  charWidth = mean((bbox[,3] - bbox[,1])/nchar(rownames(bbox)))
+  charHeight = mean(bbox[,4] - bbox[,2])
+
+     # see 1990 p10 and a smudge in between the 6 & 7 columns - a 2 pixel box.
+  sm = (bbox[,3] - bbox[,1]) > .5*charWidth & (bbox[,4] - bbox[,2]) > .75*charHeight
+#  if(!all(sm)) browser()
+  bbox = bbox[ sm, ]
+
   bboxToDF(bbox)
 }
 
@@ -179,21 +196,26 @@ function(bbox, sep = getRowSeps(bbox))
 
 # Missing values will cause problems.
 repairCols =
-function(ragRows, ncols = mostCommonNum(sapply(ragRows, nrow)))
+function(ragRows, ncols = NA)
 {
+    if(is.na(ncols))
+       ncols = mostCommonNum(sapply(ragRows, nrow))        
 
    ok = sapply(ragRows, nrow) == ncols
    cols = getColPositions(do.call(rbind, ragRows[ok]))
-   ragRows[!ok]  = lapply(ragRows[!ok], fixRow, cols)
+   ragRows[!ok]  = lapply(ragRows[!ok], fixRow, cols, ncols)
 
    if(length(unique(sapply(ragRows, nrow))) == 1)
       rowsToTable(ragRows)  # unname(lapply(ragRows, `[[`, "text"))) # do.call(rbind, lapply(ragRows, `[[`, "text"))
-   else
+   else {
+      cat("leaving as list\n")
+      print(sapply(ragRows, nrow))
       ragRows
+   }
 }
 
 rowsToTable =
-function(rows)
+function(rows, ncols)
 {
    m = do.call(rbind, lapply(rows, `[[`, "text"))
 
@@ -204,15 +226,17 @@ function(rows)
 }
 
 fixRow =
-function(x, colPos)
+function(x, colPos, ncols)
 {
+   extra = nrow(x) - ncols
 
-   w = x[2:3, ]
+   i = seq(2, 2+ extra)
+   w = x[i, ]
    x[2, "left"] = min(w[, "left"])
    x[2, "right"] = max(w[, "right"])
    x[2, "top"] = min(w[, "top"])
    x[2, "bottom"] = max(w[, "bottom"])
    x[2, "text"] = paste(w$text, collapse = " ")
-   x[-3,]
+   x[- i[-1],]
 }
 
