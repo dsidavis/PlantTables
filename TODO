@@ -1,6 +1,15 @@
 Scanned
 
-deal with tables that have missing values
+Need to use right alignment on columns after the first 2 (or 3)
+
+If we miss the ) in a rank column, we have a free floating value
+  See 1990/1990-8.png   ( 7)  The 7 is being picked up as "7" and the ) disappears.
+  ???Perhaps leave to post-processing??
+
+
+Would like the minPctRowCell to be different for column 2 than all of the others.
+
+[sort of ] deal with tables that have missing values
 
 recognize sites across tables to correct scanning errors
   For example, in the 6 images KANOTA is spelled  KANUTA  in one of the tables, but there are 3 KANOTA.
@@ -8,7 +17,7 @@ recognize sites across tables to correct scanning errors
 
 train tesseract on some of these images and see how it improves things.
 
-install imagemagick and ghostscript and then convert the pages of the pdf to png that way.
+[done] install imagemagick and ghostscript and then convert the pages of the pdf to png that way.
   imagemagick (on Linux (poisson))  doesn't do as good a job as OSX's preview
   Instead, use OSX' Automator to transform them
 
@@ -17,7 +26,7 @@ install imagemagick and ghostscript and then convert the pages of the pdf to png
     See PNG_Images_new  TIFF_images
 
 
-   1997-9-imagemagick.png
+   1997-9-imagemagick.png can't be rendered by R
 
 
 Change findCols to use as.integer(pos/scale) to use the rounding down.

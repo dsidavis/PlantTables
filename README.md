@@ -179,6 +179,12 @@ and let it work. It will create 890 files.
 
 There were issues with it creating duplicates of each page. That appears to not happen now.
 
+The Automator script gives the png files for a given PDF document sequential names, but these do not
+start at 1 or a consisten starting value. As a result, we rename these with the function
+renamePNGs() in the file [pngByPage.R](pngByPage.R).
+
+
+#### PDFBox and PDFToImage
 Originally, we used [pdfbox](https://pdfbox.apache.org/) for this.
 This works fine for splitting the PDF into multiple single-page PDF files.
 Unfortunately, its conversion of an individual PDF page to PNG results in significant
@@ -199,3 +205,27 @@ Clone the repository and install it locally, or alternatively use
 `devtools::install_github('dsidavis/Rtesseract')`.
 
 
+## The Approach
+
+We remove anything that looks like a ranking. (These columns are very close to the values on the
+left and cause issues with grouping them.)
+
+The majority of the tables have the form
+ | station number | station name | number | number | ....
+ 
+ The numeric columns often have the same width for all entries and so are left and right aligned.
+ When this is not the case, they are typically right aligned.
+
+Almost all tables have a header that has a top and a bottom line that spans the width of the table.
+They also typically have a line at the bottom of the table that spans the width of the table.
+Footnotes, etc. are below that last line.
+
+We want the lines so that we can identify the header and the footer. We discard everything in the
+footer.
+We use psm_auto as the Page Segmentation mode for tesseract so that it will report the bounding
+boxes for  lines and rectangles. The default value does not.
+
+Unfortunately, the psm_auto setting doesn't necessarily give the correct boxes for the actual text
+content.  It can omit a . and separate 7.1 into 7 and 1. For this reason, we make two passes with
+the OCR - one to get the lines, the other to get the most accurate boxes. Then we one to
+identify the body of the table (and header and footer), and the other for the boxed values and their locations.

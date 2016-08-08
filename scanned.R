@@ -15,6 +15,7 @@ library(Rtesseract)
 # Read bbox with lines
 # Discard the black box on the bottom or side
 # Find the horizontal lines across the page - should be 3
+# Find the Agronomy Progress Report trailer at the bottom of some pages. There is a wide line across the page for this.
 # Keep everything between the second top line and the bottom line
 #  Remove text close to the second top line but under it that is
 #   "far" from the next line down.  See Table 39 1990 p45.
@@ -33,9 +34,10 @@ getTable =
     #
     # The high level function for reading a table from a file.
     #
-function(file, ncols = NA, bbox = scanElements(file, FALSE), show = FALSE, ...)
+function(file, ncols = NA, bbox = scanElements(file, FALSE), show = FALSE,
+          hasLabelsUnderHeaderLine = TRUE, ...)
 {
-  bb = scannedBBox(file, bbox, show = show)
+  bb = scannedBBox(file, bbox, show = show,  hasLabelsUnderHeaderLine =  hasLabelsUnderHeaderLine)
   rrows = getRows(bb)
   ans = repairCols(rrows, ncols)
   if(!is.data.frame(ans))
@@ -66,7 +68,7 @@ scannedBBox =
     #  the page number, find the horizontal lines spanning the table and get the content
     #  of the table's body.  Returns a data frame of the relevant elements for the table's content.
     #
-function(file, bbox = scanElements(file), show = FALSE)
+function(file, bbox = scanElements(file), show = FALSE, hasLabelsUnderHeaderLine = TRUE)
 {
     bbox = cleanBBox(bbox, TRUE)
      
@@ -81,7 +83,8 @@ function(file, bbox = scanElements(file), show = FALSE)
     }
     
 #    discardElements(bbox[ - lines, ],  bbox[lines, ])
-    discardElements(bboxAccurate,  bbox[lines, ], getFullTableLines(bboxAccurate, bbox[lines,]))   # used to pass bbox[-lines, ] as 1st arg. to getFullTableLines()
+    discardElements(bboxAccurate,  bbox[lines, ], getFullTableLines(bboxAccurate, bbox[lines,]),   # used to pass bbox[-lines, ] as 1st arg. to getFullTableLines()
+                     hasLabelsUnderHeaderLine = hasLabelsUnderHeaderLine) 
 }
 
 cleanBBox =
@@ -115,12 +118,23 @@ function(bbox, hasLines = TRUE)
 
     bbox = bbox[ bbox[, 1] != 0 & bbox[, 2] > 15, ]  # the bottom > 15 is for e.g. 1990 p41 - line at the top. may already be gone now since we added the TABLE check.
 
-     # The boxes saying "Agronomy Progress Report ......", e.g. 1997-39.png
 
-    i = grep("Report", rownames(bbox))
-    if(length(i) &&  (bbox[i, "top"] > 1.25*( q <- quantile(bbox[, "top"], .98)))) {
-        cat("discarding values for top >= ", q, "\n")
-        bbox = bbox[ bbox[, "top"] < q, ]
+     # In some docments we have a banner across the bottom of the page
+     #               Agronomy Progress Report No. ..           pagenumber        Month year
+     # e.g. 1997-39.png
+     # On the left side vertically in 1997-32.png.
+     # Get rid of the text and the box associated with this. If not, it messes up computing the lines.
+
+    i = grep("eport|ogress", rownames(bbox))
+    if(length(i)) {  #  (bbox[i[1], "top"] > 1.25*( q <- quantile(bbox[, "top"], .98))))
+        tt = bbox[, "top"]
+        d = bbox[i[1], "top"] - tt
+
+        if( min(d [ d > 80]) > 200 ) {  # 80 is where the bbox above the agronomy progress report is in 1993-31.
+          q = bbox[i[1], "top"] - 80
+          cat("discarding values for top >= ", q, "\n")
+          bbox = bbox[ bbox[, "top"] < q, ]
+        }
     }
 
     i = specs(bbox)
@@ -223,7 +237,6 @@ function(bbox, lines, partial = .2)
       warning("couldn't find any lines across the table. Problems are very likely.  Did we discard elements to the left of the table? Did we find the word Table at the top of the document?")
    
    lines[w, ]
-#  lines[  lines[,1] - min(bbox[,1])
 }
 
 
@@ -231,21 +244,31 @@ discardElements =
     #
     #  discard  elements that are not in the content/body of the table.
     #
-function(bbox, lines = findLines(bbox), ll = getFullTableLines(bbox, lines))
+function(bbox, lines = findLines(bbox), ll = getFullTableLines(bbox, lines), hasLabelsUnderHeaderLine = TRUE)
 {
     # keep everything between the two lines at the top and bottom of the body of the table.
 
   ll = ll[ order(ll[, "top"]), ]
 
-  i = bbox[, "top"] > ll[2, "bottom"] & bbox[, "top"] < ll[3, "bottom"] 
+  i = bbox[, "top"] > ll[2, "bottom"] & bbox[, "bottom"] < ll[3, "top"] 
   bbox = bbox[ i, ]
 
-   # Find the elements that are under the second line but very close to it, e.g., 1990 p45 &  p 31 - 33
-  h = mean(bbox[, "top"] - bbox[, "bottom"])
 
-  d = (bbox[, "bottom"] - ll[2, "top"])
-  i = d < .16 * h   # scale factor used to be 1. But 1997-16 has the first row very close to this lower line of the header. Works for 1990-12 though.
-  bbox = bbox[ !i, ]
+
+  h = mean(bbox[, "top"] - bbox[, "bottom"])
+  amtBelowLine = .16 * h       
+  if(is.numeric(hasLabelsUnderHeaderLine)) {
+    amtBelowLine = hasLabelsUnderHeaderLine
+    hasLabelsUnderHeaderLine = TRUE
+  }
+  
+  if(hasLabelsUnderHeaderLine) {
+      # Find the elements that are under the second line but very close to it, e.g., 1990 p45 &  p 31 - 33
+  
+     d = (bbox[, "bottom"] - ll[2, "top"])
+     i = d < amtBelowLine   # scale factor used to be 1. But 1997-16 has the first row very close to this lower line of the header. Works for 1990-12 though.
+     bbox = bbox[ !i, ]
+  }
 
  
   i = which(rownames(bbox) %in% c("MEAN", "Mean", "AVE" ))
@@ -436,7 +459,27 @@ function(ragRows, nrows, ncols, charWidth = NA, ...)
       tmp = tmp[-3]
    }
 
-   toTable(lapply(tmp[sapply(tmp, nrow) > 0], fixColumn, nrows))
+   ans = toTable(lapply(tmp[sapply(tmp, nrow) > 0], fixColumn, nrows))
+   
+   checkFirstRow(ans)
+}
+
+checkFirstRow =
+    #
+    # When we don't detect the characters/elements just below the header line, if they exist and not close enough to that line,
+    # they will be included as the first row. So we check here to see if they are all in () or NA or ""
+    #
+    # One can also control this in the call to getTable() with hasLabelsUnderHeaderLine = TRUE/FALSE or a number
+    # but that is more messing about with the correct offset.
+    #
+function(tbl)
+{
+   els = unlist( tbl[1, ])
+   els = els[!is.na(els) & els != ""]
+   if(all(grepl("^\\(.*\\)", els)))
+      tbl = tbl[-1, ]
+   else
+      tbl
 }
 
 
@@ -476,7 +519,7 @@ fixParens =
     # We check to see if all of the characters in this column are numbers or ( ) (or { due to errors in OCR)
 function(text)
 {
-   chars = unlist(strsplit(a[[3]], ""))
+   chars = unlist(strsplit(text[[3]], ""))
    if(all(chars %in% c(" ", 0:9, "(", "{", ")")))
       gsub(" ?[\\({].*", "", text)
    else
