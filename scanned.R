@@ -8,9 +8,6 @@ library(Rtesseract)
 #
 # Counter example  1990 p30 (table 24)
 #
-#
-
-
 # Table 1990 p35 has text in the body that has an underline and that is not part of a real row.
 
 #
@@ -36,9 +33,9 @@ getTable =
     #
     # The high level function for reading a table from a file.
     #
-function(file, ncols = NA, bbox = scanElements(file, show), show = FALSE, ...)
+function(file, ncols = NA, bbox = scanElements(file, FALSE), show = FALSE, ...)
 {
-  bb = scannedBBox(file, bbox)
+  bb = scannedBBox(file, bbox, show = show)
   rrows = getRows(bb)
   ans = repairCols(rrows, ncols)
   if(!is.data.frame(ans))
@@ -69,17 +66,22 @@ scannedBBox =
     #  the page number, find the horizontal lines spanning the table and get the content
     #  of the table's body.  Returns a data frame of the relevant elements for the table's content.
     #
-function(file, bbox = scanElements(file))
+function(file, bbox = scanElements(file), show = FALSE)
 {
     bbox = cleanBBox(bbox, TRUE)
      
     lines = findLines(bbox)
 
-    bboxAccurate = scanElements(file, segMode = "psm_single_block")
+    bboxAccurate = scanElements(file, segMode = "psm_single_block", show = show)
     bboxAccurate = cleanBBox(bboxAccurate, FALSE)
+
+    if(show) {
+       r = par()$usr[4]
+       rect(bbox[lines, 1], r - bbox[lines, 2], bbox[lines, 3], r - bbox[lines, 4], col = "green")
+    }
     
 #    discardElements(bbox[ - lines, ],  bbox[lines, ])
-    discardElements(bboxAccurate,  bbox[lines, ], getFullTableLines(bbox[-lines, ], bbox[lines,]))
+    discardElements(bboxAccurate,  bbox[lines, ], getFullTableLines(bboxAccurate, bbox[lines,]))   # used to pass bbox[-lines, ] as 1st arg. to getFullTableLines()
 }
 
 cleanBBox =
@@ -112,6 +114,18 @@ function(bbox, hasLines = TRUE)
     }
 
     bbox = bbox[ bbox[, 1] != 0 & bbox[, 2] > 15, ]  # the bottom > 15 is for e.g. 1990 p41 - line at the top. may already be gone now since we added the TABLE check.
+
+     # The boxes saying "Agronomy Progress Report ......", e.g. 1997-39.png
+
+    i = grep("Report", rownames(bbox))
+    if(length(i) &&  (bbox[i, "top"] > 1.25*( q <- quantile(bbox[, "top"], .98)))) {
+        cat("discarding values for top >= ", q, "\n")
+        bbox = bbox[ bbox[, "top"] < q, ]
+    }
+
+    i = specs(bbox)
+    if(length(i))
+       bbox = bbox[ - i, ]
     
     bbox
 }
@@ -135,15 +149,74 @@ getFullTableLines =
     #
     #  This gets the lines that span the entire table
     #
-function(bbox, lines)
+function(bbox, lines, partial = .2)
 {
-#   w = lines[,3] - lines[,1]
+   # if the most extreme (on the right) element is below all of our potential lines
+   # then that is probably in the footer, which we haven't removed yet.  See 1983-18.png
+   # There could be several and so we should iterate or do this in one step (vectorized)
+
+   if(nrow(lines) < 3) {
+        #    1994-8 missing the 2nd line of the header.
+       if(nrow(lines) == 2) {
+         i = grep("entry", rownames(bbox), ignore.case = TRUE)
+         if(!length(i))
+             stop("cannot find the bottom of the table's header")
+         v = bbox[i, ]
+         v[c(2, 4)] = v[c(2, 4)] + 20 #  getCharHeight(bbox)
+         lines = rbind(lines, v)
+         lines = lines[order(lines[, 2]), ]
+         return(lines)
+       }
+   }
+    
+   i = which.max(bbox[,3])
+   if(all(bbox[i,3] > lines[,3]))
+      bbox = bbox[-i, ]
+    
+    
+   a = lines[,1] - min(bbox[, 1]) < 30  # was arbitrarily 10. But 1994-8 has a problem with the 8th column 703 being .703 because of a spec.
+   b = (lines[,3] - max(bbox[, 3]) > - 10)   
+   w =  a &  b
    
-   w = lines[,1] - min(bbox[, 1]) < 10 & (lines[,3] - max(bbox[, 3]) > - 10)
    if(sum(w) < 3) {
-       # see if we have a partial line.
-       width = mean(lines[w,3] - lines[w, 1])
-       w = w | (lines[,3] - lines[,1]) > .7*width
+#browser()       
+          # see if we have a partial line.
+       if(sum(w) == 0) {
+            # we're in trouble!
+          
+       } else {
+            # Need to ensure we end up with just 3 lines  header top, header bottom and footer line
+            # With partial being quite small to allow for a small line, we are in danger of picking up short lines in the header.
+            # So we need to put a constraint, probably that the line has to start with others. We need more empirical evidence.
+            # See 1985-46.png
+           width = mean(lines[w, 3] - lines[w, 1])
+           start = min(lines[w, 1])
+           end = min(lines[w, 1])           
+           w = w |  ( (lines[,3] - lines[,1]) > partial * width & (lines[,1] - start) < 40)
+
+
+           if(sum(w) < 3) {
+               # Perhaps 2 line segments that are close in vertical location, but broken by tesseract
+               # Should make up about 80 % of the width of lines[w,] and be at the same height and below
+               # the first line
+               # Assumption here is that sum(!w) == 2. Generalize.
+               # 1994-23.png
+             tableWidth = mean(lines[w, 3] - lines[w, 1])
+             tmp = lines[!w,]
+             tw = sum( tmp[,3] - tmp[,1])
+             th = max( tmp[,4] - tmp[,2])
+             if(tw > .7* tableWidth &&  abs(th - max( lines[w,4] - lines[w,2] )) < 20) {
+                   # repair the line fragments in lines into a single line.
+                lines = lines[w,]
+                v = lines[1,]
+                v[c(2, 4)] = c(max(tmp[,2]), max(tmp[,4])) # put as low as possible to pick 
+                lines = rbind(lines, v)
+                lines = lines[order(lines[, 2]), ]
+                return(lines)
+             }
+
+           }
+       }
    }
 
    if(!any(w))
@@ -171,11 +244,11 @@ function(bbox, lines = findLines(bbox), ll = getFullTableLines(bbox, lines))
   h = mean(bbox[, "top"] - bbox[, "bottom"])
 
   d = (bbox[, "bottom"] - ll[2, "top"])
-  i = d < 1.*h  # d > 0 ???
+  i = d < .16 * h   # scale factor used to be 1. But 1997-16 has the first row very close to this lower line of the header. Works for 1990-12 though.
   bbox = bbox[ !i, ]
 
  
-  i = which(rownames(bbox) %in% c("MEAN", "Mean" ))
+  i = which(rownames(bbox) %in% c("MEAN", "Mean", "AVE" ))
   if(length(i))
       bbox = bbox[ bbox[, "top"] <  bbox[i, "top"] - 10, ]
 
@@ -273,7 +346,6 @@ function(ragRows, ncols = NA)
    cols = getColPositions(do.call(rbind, ragRows[ok]))
    ragRows[!ok]  = lapply(ragRows[!ok], fixRow, cols, ncols)
     
-#browser()
    if(length(unique(sapply(ragRows, nrow))) == 1)
       rowsToTable(ragRows)  # unname(lapply(ragRows, `[[`, "text"))) # do.call(rbind, lapply(ragRows, `[[`, "text"))
    else {
@@ -284,6 +356,10 @@ function(ragRows, ncols = NA)
 }
 
 rowsToTable =
+    #
+    # Converts the list of row each with its own collection of values into a data frame.
+    # It attempts to convert each column into the appropriate type - numeric, logical, etc.
+    #
 function(rows, ncols)
 {
    m = do.call(rbind, lapply(rows, `[[`, "text"))
@@ -295,12 +371,15 @@ function(rows, ncols)
 }
 
 fixRow =
+    #
+    # This focuses on the second column. When there are more columns/entries than expected (ncols)
+    # it takes the 2, 3, ... and combines them into the second column.
+    #
 function(x, colPos, ncols)
 {
    if(nrow(x) < ncols) 
       return(x)
 
-       
    extra = nrow(x) - ncols
 
    i = seq(2, 2+ extra)
@@ -315,7 +394,10 @@ function(x, colPos, ncols)
 
 getCharWidth =
 function(bb)
-   median(  (bb[,3] - bb[,1])/nchar(bb$text)  )    
+{
+   txt = if(is.data.frame(bb))  bb$text else rownames(bb)
+   median(  (bb[,3] - bb[,1])/nchar(txt)  )
+}
 
 discoverCols =
 function(bbox, nrows, ncols, charWidth = getCharWidth(bb),
@@ -359,6 +441,9 @@ function(ragRows, nrows, ncols, charWidth = NA, ...)
 
 
 closeTogether =
+    #
+    # compute the distance between successive elements in a bbox
+    #
 function(lines, charWidth)
 {
   if(nrow(lines) == 1)
@@ -385,6 +470,10 @@ function(bbox, nrows)
 }
 
 fixParens =
+    #
+    # For the values in a column, see if any have extra content that comes from  ranks
+    #  e.g. "540 (9"
+    # We check to see if all of the characters in this column are numbers or ( ) (or { due to errors in OCR)
 function(text)
 {
    chars = unlist(strsplit(a[[3]], ""))
@@ -393,9 +482,15 @@ function(text)
    else
       text
 }
-#
-foo = 
-function(vals, pos)
-{
 
+
+specs =
+function(bbox, threshold = 5, charWidth = getCharWidth(bbox))
+{
+  w = bbox[,3] - bbox[,1]
+  h = bbox[,4] - bbox[,2]
+  i = which( w < threshold & h < threshold )
+  D = as.matrix(dist(bbox))
+  m = apply(D[i, , drop = FALSE], 1, function(x) sort(x)[2])
+  i [  m > 3*charWidth ]
 }
