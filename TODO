@@ -17,7 +17,8 @@ recognize sites across tables to correct scanning errors
 
 train tesseract on some of these images and see how it improves things.
 
-[done] install imagemagick and ghostscript and then convert the pages of the pdf to png that way.
+[done] 
+install imagemagick and ghostscript and then convert the pages of the pdf to png that way.
   imagemagick (on Linux (poisson))  doesn't do as good a job as OSX's preview
   Instead, use OSX' Automator to transform them
 

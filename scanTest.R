@@ -48,6 +48,7 @@ hasLabelsUnderHeaderLine  can be TRUE/FALSE or an actual distance.
        So we are probably discarding them because of an offset from something else, i.e. bbox[, "top"] > otherPos + delta  and delta is too large?
 1993-38 - ERROR
 1993-39 - ERROR
+           can't get header lines. The 4.1 in the CV row is beyond all the other text.  But there is a MEAN in the bbox's rownames.
 
 
 1994-8 - when scanned, the 703 in the 8 column extends to the left and has a spec that makes this .703  This then sticks out to the left.

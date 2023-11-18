@@ -4,7 +4,7 @@ f = "1990_p44.png"
 ts = tesseract(f)
 
 Recognize(ts)
-bb = BoundingBoxes(ts)
+bb = getBoxes(ts)
 
 library(png)
 img = readPNG(GetInputName(ts))

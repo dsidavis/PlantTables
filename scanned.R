@@ -55,7 +55,7 @@ function(file, show = FALSE, segMode = "psm_auto")
 message("scanElements for ", file, " ", segMode)
     ts = tesseract(file, segMode) # psm_auto gets us the lines in the bounding boxes.
     Recognize(ts)
-    bb = BoundingBoxes(ts)
+    bb = getBoxes(ts)
     colnames(bb) = c("left", "bottom", "right", "top")
     if(show)
        plot(ts, bbox = bb)
@@ -163,6 +163,14 @@ getFullTableLines =
     #
     #  This gets the lines that span the entire table
     #
+    # If the bottom header line is segmented and we cannot identify it, we need a different approach.
+    # See 1993-38, 39, 33.
+    # In these cases, the scanner has given precedence to text through which the line runs and so
+    # segmented the line.  The text is the same HEIGHT and WEIGHT.  So we could recognize this.
+    #  More commonly, it is ENTRY
+    # The other characteristic is that there are labels below the line from the header (GRAMS) (INCHES), etc.
+    #
+    #
 function(bbox, lines, partial = .2)
 {
    # if the most extreme (on the right) element is below all of our potential lines
@@ -248,6 +256,16 @@ function(bbox, lines = findLines(bbox), ll = getFullTableLines(bbox, lines), has
 {
     # keep everything between the two lines at the top and bottom of the body of the table.
 
+  i = which(rownames(bbox) %in% c("MEAN", "Mean", "AVE" ))
+  if(length(i))
+      bbox = bbox[ bbox[, "top"] <  bbox[i, "top"] - 10, ]
+
+     # looking for entry and getting the things above it.
+     # This should already be done via the horizontal lines.
+  if(length(i <- grep("entry", rownames(bbox), ignore.case = TRUE) ))
+     bbox = bbox[ bbox[, "top"] > bbox[i , "top"] + 10  , ]
+    
+
   ll = ll[ order(ll[, "top"]), ]
 
   i = bbox[, "top"] > ll[2, "bottom"] & bbox[, "bottom"] < ll[3, "top"] 
@@ -270,15 +288,6 @@ function(bbox, lines = findLines(bbox), ll = getFullTableLines(bbox, lines), has
      bbox = bbox[ !i, ]
   }
 
- 
-  i = which(rownames(bbox) %in% c("MEAN", "Mean", "AVE" ))
-  if(length(i))
-      bbox = bbox[ bbox[, "top"] <  bbox[i, "top"] - 10, ]
-
-     # looking for entry and getting the things above it.
-     # This should already be done via the horizontal lines.
-  if(length(i <- grep("entry", rownames(bbox), ignore.case = TRUE) ))
-     bbox = bbox[ bbox[, "top"] > bbox[i , "top"] + 10  , ]
 
 
   # Find the elements that were mistakenly not (. Currently (from 1990 p45) these seem

@@ -1,3 +1,30 @@
+# bboxToDF - matrix to data frame with the text added as a column
+# colAlignment
+# colAlignmentFuzzy
+# combineHBoxes
+# convertCol
+# discardBlanks
+# fillMissingCells
+# findBody - determine the content of the table, discarding the header and footer material.
+# findCols
+# fixPos
+# fixSubscripts
+# getColPositions
+# getColsFromBBox
+# getColumnData
+# getOkColPositions
+# getOkColPositions1
+# getScannedCols
+# getTableFromBBox
+# guessCells
+# locateColumns
+# mergeHorizontalBoxes
+# mostCommonNum
+# orderBBox
+# repairCells
+# toTable
+# tryCompactLongerRows
+
 # This is for reading the 2004/ tables.
 # It may work for the OCR tables also, but the bounding boxes are less  precisely aligned.
 
@@ -16,7 +43,7 @@ function(file, show = TRUE)
 {
     ts = tesseract(file)
     Recognize(ts)
-    bbox = BoundingBoxes(ts)
+    bbox = getBoxes(ts)
 
     if(show) 
        plot(ts, bbox = bbox, cropToBoxes = TRUE, margin = .005)
@@ -142,18 +169,6 @@ function(bbox, page, show = TRUE, footerRX = "^(MEAN|Rating scale|Analysis provi
 }
 
 
-bboxToDF =
-function(bb)
-{
-    if(is.data.frame(bb))
-        return(bb)
-    
-    txt = rownames(bb)
-    bb = as.data.frame(bb)
-    rownames(bb) = NULL
-    bb$text = txt
-    bb
-}
 
 fixSubscripts =
 function(bb)
@@ -314,6 +329,9 @@ function(bb, colLocations)
 
 
 colAlignment =
+    #
+    #  given a bounding box for the elements in a column,
+    #  this attempts to determine whether the column is left, right or center aligned.
 function(bb)
 {
   if(all(bb[, "left"] == bb[1, "left"]))
@@ -347,6 +365,10 @@ function(vals, widths, threshold = .9)
 }
 
 discardBlanks =
+    #
+    # careful when working with scanned/OCR images. The " " can be the lines.
+    #
+    #
 function(bbox, page )
 {
    i = rownames(bbox) == " "
@@ -356,7 +378,6 @@ function(bbox, page )
         # the blanks are above all the non-blanks, to the left of all the non blanks, or below all the non-blanks
    w = bbox[i, "bottom"] > max(bbox[!i, "top"]) | bbox[i, "left"] < min(bbox[!i, "left"]) | bbox[i, "top"] < max(bbox[!i, "bottom"])
 
-   
    bbox[ - which(i)[w], ]
 }
 
@@ -552,6 +573,7 @@ function(d, dropRanks = TRUE)
     if(all(len == len[1])) 
        d = as.data.frame(d, stringsAsFactors = FALSE)
 
+    names(d) = sprintf("V%d", seq(along = d))
     d
 }
 
@@ -646,9 +668,31 @@ orderBBox =
     # We can use decreasing to order them in increasing or decreasing order.
     # The order helps us compute differences between adjacent lines or columns.
     #
+    # We can sort by any column name and in either increasing or decreasing order.
+    #
 function(bbox, colName = "bottom",  decreasing = TRUE)
 {
    o = order(bbox[, colName], decreasing = decreasing)
    bbox[o, ]
 }
 
+
+
+bboxToDF =
+    #
+    # Given a bbox, order the rows based on the colName given as a name or index.
+    # We can use decreasing to order them in increasing or decreasing order.
+    # The order helps us compute differences between adjacent lines or columns.
+    #
+    #
+function(bb)
+{
+    if(is.data.frame(bb))
+        return(bb)
+    
+    txt = rownames(bb)
+    bb = as.data.frame(bb)
+    rownames(bb) = NULL
+    bb$text = txt
+    bb
+}

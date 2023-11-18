@@ -15,9 +15,9 @@ function(filename, ...)
 getTable =
 function(filename, ts = tesseract(filename, ...), ...)
 {
-browser()    
+#browser()    
     Recognize(ts)
-    bb = BoundingBoxes(ts, "word")
+    bb = getBoxes(ts, "word")
     i = grep("grand|mean", rownames(bb), ignore.case = TRUE)
     if(length(i))
       bb = bb[ bb[, "top.right.y"] <  bb[i[1], "top.right.y"] - 5, ]

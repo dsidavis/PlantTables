@@ -9,7 +9,7 @@ function(file = "1990_p44.png", img = readPNG(file))
     
   ts = tesseract(file)
   Recognize(ts)
-  bb = BoundingBoxes(ts)
+  bb = getBoxes(ts)
   colnames(bb) = c("left", "bottom", "right", "top")
 
   plot(ts, img = img, cropToBoxes = FALSE) # # TRUE)
